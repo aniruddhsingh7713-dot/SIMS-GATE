@@ -1,0 +1,136 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}Sign In | {{ site_title|default:'SIMS GATE Administration' }}{% endblock %}
+
+{% block bodyclass %}{{ block.super }} login sims-admin-login-body{% endblock %}
+
+{% block usertools %}{% endblock %}
+{% block nav-global %}{% endblock %}
+{% block nav-sidebar %}{% endblock %}
+{% block content_title %}{% endblock %}
+{% block nav-breadcrumbs %}{% endblock %}
+
+{% block content %}
+<div class="sims-login-page-wrapper">
+  <div class="sims-login-card">
+    
+    <!-- Top Decorative Accent -->
+    <div class="sims-login-top-bar"></div>
+
+    <div class="sims-login-inner">
+      <!-- Institutional Branding Header -->
+      <div class="sims-login-header">
+        <div class="sims-login-crest">
+          <span>S</span>
+        </div>
+        <div class="sims-login-brand-meta">
+          <span class="sims-login-org">SIMS GATE RAIPUR</span>
+          <h1 class="sims-login-title">Administration Console</h1>
+          <p class="sims-login-subtitle">Executive Academic & Operations Management System</p>
+        </div>
+      </div>
+
+      <!-- Authentication Error Alerts -->
+      {% if form.errors and not form.non_field_errors %}
+        <div class="sims-login-alert sims-login-alert-error" role="alert">
+          <span class="sims-alert-icon">⚠️</span>
+          <div class="sims-alert-msg">
+            <strong>Login Failed:</strong> Please verify your username and password and try again.
+          </div>
+        </div>
+      {% endif %}
+
+      {% if form.non_field_errors %}
+        <div class="sims-login-alert sims-login-alert-error" role="alert">
+          <span class="sims-alert-icon">⚠️</span>
+          <div class="sims-alert-msg">
+            {% for error in form.non_field_errors %}
+              <div>{{ error }}</div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
+      {% if user.is_authenticated %}
+        <div class="sims-login-alert sims-login-alert-warning" role="alert">
+          <span class="sims-alert-icon">🔒</span>
+          <div class="sims-alert-msg">
+            You are logged in as <strong>{{ username }}</strong>, but do not have administrative staff permissions.
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- Official Django Admin Login Form -->
+      <form action="{{ app_path }}" method="post" id="login-form" class="sims-login-form">
+        {% csrf_token %}
+
+        <div class="sims-field-group">
+          <label for="id_username" class="sims-field-label">
+            <span>Administrator Username</span>
+            <span class="sims-field-req">*</span>
+          </label>
+          <div class="sims-input-container">
+            <span class="sims-input-icon">👤</span>
+            <input 
+              type="text" 
+              name="username" 
+              id="id_username" 
+              autofocus 
+              autocapitalize="none" 
+              autocomplete="username" 
+              maxlength="150" 
+              required 
+              placeholder="Enter your admin username"
+              class="sims-login-input"
+            >
+          </div>
+          {% if form.username.errors %}
+            <div class="sims-field-error">{{ form.username.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <div class="sims-field-group">
+          <div class="sims-label-row">
+            <label for="id_password" class="sims-field-label">
+              <span>Secure Password</span>
+              <span class="sims-field-req">*</span>
+            </label>
+          </div>
+          <div class="sims-input-container">
+            <span class="sims-input-icon">🔒</span>
+            <input 
+              type="password" 
+              name="password" 
+              id="id_password" 
+              autocomplete="current-password" 
+              required 
+              placeholder="••••••••••••"
+              class="sims-login-input"
+            >
+          </div>
+          {% if form.password.errors %}
+            <div class="sims-field-error">{{ form.password.errors.0 }}</div>
+          {% endif %}
+          <input type="hidden" name="next" value="{{ next|default:'/admin/' }}">
+        </div>
+
+        <button type="submit" class="sims-login-submit-btn">
+          <span>Sign In to Admin Console</span>
+          <span class="sims-btn-arrow">→</span>
+        </button>
+      </form>
+
+      <!-- Footer Navigation & Trust Badges -->
+      <div class="sims-login-footer">
+        <a href="http://localhost:3000" class="sims-back-to-site" target="_blank" rel="noopener noreferrer">
+          <span>← Back to Student Website</span>
+        </a>
+        <div class="sims-security-tag">
+          <span>🔒 256-Bit Encrypted Institutional Access</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

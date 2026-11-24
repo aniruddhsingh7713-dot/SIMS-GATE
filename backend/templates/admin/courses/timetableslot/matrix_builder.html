@@ -1,0 +1,513 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+  .sims-builder-card {
+    background: #FFFFFF;
+    border: 1px solid #CBD5E1;
+    border-radius: 14px;
+    box-shadow: 0 8px 30px -4px rgba(15, 23, 42, 0.08);
+    margin: 20px 0 40px;
+    overflow: hidden;
+  }
+  .sims-step1-banner {
+    background: #15271E;
+    color: #FFFFFF;
+    padding: 24px 32px;
+    border-bottom: 2px solid #C5A059;
+  }
+  .sims-step1-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  .sims-picker-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .sims-control-box {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .sims-control-label {
+    font-size: 11px;
+    font-weight: 800;
+    color: #C5A059;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .sims-select-large, .sims-date-large {
+    background: #FFFFFF !important;
+    color: #0F172A !important;
+    border: 2px solid #C5A059 !important;
+    border-radius: 8px !important;
+    padding: 10px 14px !important;
+    font-size: 14px !important;
+    font-weight: 750 !important;
+    min-width: 200px !important;
+    cursor: pointer;
+  }
+  .sims-date-large {
+    min-width: 170px !important;
+  }
+  .sims-date-calc-badge {
+    background: rgba(197, 160, 89, 0.15);
+    border: 1px solid #C5A059;
+    color: #E5C378;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .sims-toolbar-row {
+    background: #F8FAFC;
+    padding: 12px 32px;
+    border-bottom: 1px solid #E2E8F0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .sims-btn-preset {
+    background: #FFFFFF;
+    border: 1px solid #CBD5E1;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 750;
+    padding: 7px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .sims-btn-preset:hover {
+    background: #15271E;
+    color: #FFFFFF;
+    border-color: #15271E;
+  }
+  .sims-matrix-table-wrap {
+    overflow-x: auto;
+    padding: 20px;
+  }
+  .sims-builder-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 8px;
+    min-width: 960px;
+  }
+  .sims-builder-table th {
+    background: #F1F5F9;
+    color: #0F172A;
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+    padding: 12px;
+    text-align: center;
+    border-radius: 8px;
+    border: 1px solid #E2E8F0;
+  }
+  .sims-time-slot-header {
+    width: 160px;
+    background: #15271E !important;
+    color: #FFFFFF !important;
+    text-align: left !important;
+    padding: 14px !important;
+    vertical-align: middle;
+    border-radius: 8px;
+  }
+  .sims-matrix-cell {
+    background: #FFFFFF;
+    border: 1.5px solid #E2E8F0;
+    border-radius: 10px;
+    padding: 12px;
+    vertical-align: top;
+    min-width: 140px;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  }
+  .sims-matrix-cell:hover, .sims-matrix-cell:focus-within {
+    border-color: #C5A059;
+    box-shadow: 0 4px 12px rgba(197, 160, 89, 0.15);
+  }
+  .sims-cell-fixed-timing {
+    font-size: 10px;
+    font-weight: 800;
+    color: #B45309;
+    background: #FEF3C7;
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+  .sims-subject-input {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    border: 1.5px solid #CBD5E1 !important;
+    border-radius: 6px !important;
+    padding: 8px 10px !important;
+    font-size: 13px !important;
+    font-weight: 750 !important;
+    color: #0F172A !important;
+    background: #FFFFFF !important;
+    margin-bottom: 6px !important;
+    transition: all 0.15s ease;
+  }
+  .sims-subject-input:focus {
+    border-color: #15271E !important;
+    outline: none !important;
+    background: #F8FAFC !important;
+  }
+  .sims-faculty-select {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    border: 1px solid #E2E8F0 !important;
+    border-radius: 5px !important;
+    padding: 5px 8px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: #475569 !important;
+    background: #F8FAFC !important;
+  }
+  .sims-submit-footer {
+    background: #FFFFFF;
+    padding: 20px 32px;
+    border-top: 1px solid #E2E8F0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .sims-btn-push {
+    background: linear-gradient(135deg, #15271E 0%, #1F3A2B 100%);
+    color: #FFFFFF;
+    border: 1.5px solid #C5A059;
+    font-size: 14px;
+    font-weight: 800;
+    padding: 12px 28px;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(21, 39, 30, 0.25);
+    transition: all 0.2s ease;
+  }
+  .sims-btn-push:hover {
+    background: #1F3A2B;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(21, 39, 30, 0.35);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sims-builder-card">
+  <form method="post" id="matrix_builder_form">
+    {% csrf_token %}
+    <input type="hidden" name="week_range_label" id="id_week_range_label" value="">
+    <input type="hidden" name="replace_existing" value="1">
+
+    <!-- ==========================================
+         STEP 1: ONLY ASK BRANCH & START DATE
+         ========================================== -->
+    <div class="sims-step1-banner">
+      <div class="sims-step1-row">
+        <div>
+          <h2 style="font-size: 20px; font-weight: 800; margin: 0 0 4px; color: #FFFFFF;">
+            ⚡ Create / Edit Weekly Timetable Matrix
+          </h2>
+          <p style="font-size: 12.5px; color: #CBD5E1; margin: 0;">
+            Step 1: Pick Branch &amp; Start Date. Step 2: Type Subjects into the Mon–Sat Matrix.
+          </p>
+        </div>
+
+        <div class="sims-picker-group">
+          <!-- 1. Pick Branch -->
+          <div class="sims-control-box">
+            <label class="sims-control-label" for="id_branch">1. SELECT BRANCH:</label>
+            <select name="branch" id="id_branch" class="sims-select-large" onchange="handleBranchChange()">
+              {% for b_code, b_name in branches %}
+                <option value="{{ b_code }}" {% if b_code == 'CSE' %}selected{% endif %}>{{ b_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- 2. Pick Start Date -->
+          <div class="sims-control-box">
+            <label class="sims-control-label" for="id_start_date">2. START DATE (MONDAY):</label>
+            <input 
+              type="date" 
+              name="start_date" 
+              id="id_start_date" 
+              value="{{ default_start_date }}" 
+              class="sims-date-large"
+              onchange="updateDates()"
+            >
+          </div>
+
+          <!-- Week Number -->
+          <div class="sims-control-box">
+            <label class="sims-control-label" for="id_week_number">WEEK NO:</label>
+            <input 
+              type="number" 
+              name="week_number" 
+              id="id_week_number" 
+              value="1" 
+              min="1" 
+              max="52" 
+              style="width: 80px; padding: 10px; border-radius: 8px; border: 2px solid #C5A059; font-weight: 800;"
+              onchange="handleBranchChange()"
+            >
+          </div>
+
+          <!-- Auto-computed Date Range Display -->
+          <div class="sims-control-box">
+            <label class="sims-control-label">CALCULATED WEEK (MON–SAT):</label>
+            <div class="sims-date-calc-badge" id="range_text">
+              Oct 20 – Oct 25, 2026
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Toolbar (Preset Auto-Fill) -->
+    <div class="sims-toolbar-row">
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <span style="font-size: 11px; font-weight: 800; color: #64748B; text-transform: uppercase;">Quick Actions:</span>
+        <button type="button" class="sims-btn-preset" onclick="autoFillBranchTemplate()" style="border-color: #C5A059; color: #8C6D23;">
+          ⚡ Auto-Fill Default Schedule for this Branch
+        </button>
+        <button type="button" class="sims-btn-preset" onclick="loadExistingSlots()">
+          📥 Load Saved Schedule from Database
+        </button>
+        <button type="button" class="sims-btn-preset" onclick="clearMatrix()">
+          🧹 Clear All Subjects
+        </button>
+      </div>
+      <div id="status_msg" style="font-size: 12px; font-weight: 700; color: #15803D;"></div>
+    </div>
+
+    <!-- ==========================================
+         STEP 2: MON TO SAT MATRIX GRID (JUST TYPE SUBJECT)
+         ========================================== -->
+    <div class="sims-matrix-table-wrap">
+      <table class="sims-builder-table">
+        <thead>
+          <tr>
+            <th style="width: 160px; text-align: left;">Time Slot</th>
+            {% for day_code, day_name in days %}
+              <th>
+                <div>{{ day_name }}</div>
+                <div style="font-size: 10px; color: #64748B; font-weight: 600;" id="date_hdr_{{ day_code }}">--</div>
+              </th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for slot in slots %}
+            <tr>
+              <!-- Time Slot Row Header -->
+              <td class="sims-time-slot-header">
+                <div style="font-size: 11.5px; font-weight: 800; color: #E5C378;">{{ slot.label }}</div>
+                <div style="font-size: 11px; opacity: 0.9; margin-top: 3px;">{{ slot.start_time }} – {{ slot.end_time }}</div>
+              </td>
+
+              <!-- Monday to Saturday Day Cells -->
+              {% for day_code, day_name in days %}
+                <td class="sims-matrix-cell" id="cell_{{ day_code }}_{{ slot.order }}">
+                  <div class="sims-cell-fixed-timing">
+                    {{ slot.start_time }} – {{ slot.end_time }}
+                  </div>
+
+                  <!-- Hidden Metadata fields -->
+                  <input type="hidden" name="slot_{{ day_code }}_{{ slot.order }}_time_label" value="{{ slot.label }}">
+                  <input type="hidden" name="slot_{{ day_code }}_{{ slot.order }}_start_time" value="{{ slot.start_time }}">
+                  <input type="hidden" name="slot_{{ day_code }}_{{ slot.order }}_end_time" value="{{ slot.end_time }}">
+                  <input type="hidden" name="slot_{{ day_code }}_{{ slot.order }}_type" value="{% if slot.order == 3 and day_code == 'SAT' %}CBT_TEST{% else %}CLASS{% endif %}">
+                  <input type="hidden" name="slot_{{ day_code }}_{{ slot.order }}_room" value="Classroom 3A">
+                  <input type="hidden" name="slot_{{ day_code }}_{{ slot.order }}_category" value="{{ slot.default_cat }}">
+
+                  <!-- PRIMARY INPUT: SUBJECT NAME -->
+                  <input 
+                    type="text" 
+                    id="input_sub_{{ day_code }}_{{ slot.order }}"
+                    name="slot_{{ day_code }}_{{ slot.order }}_subject" 
+                    placeholder="Enter Subject Name..." 
+                    class="sims-subject-input"
+                  >
+
+                  <!-- Secondary: Faculty Selector -->
+                  <select 
+                    id="input_fac_{{ day_code }}_{{ slot.order }}"
+                    name="slot_{{ day_code }}_{{ slot.order }}_faculty" 
+                    class="sims-faculty-select"
+                  >
+                    {% for f in faculties %}
+                      <option value="{{ f.name }}">{{ f.name }}</option>
+                    {% endfor %}
+                    <option value="Senior Ex-IITian Faculty">Senior Ex-IITian Faculty</option>
+                    <option value="Test Administration Wing">Test Administration Wing</option>
+                  </select>
+                </td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Submit Footer -->
+    <div class="sims-submit-footer">
+      <div style="font-size: 13px; color: #475569; font-weight: 600;">
+        💡 Tip: Click <strong>"Auto-Fill Default Schedule"</strong> to instantly load standard subjects, then edit as needed.
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <a href="{% url 'admin:courses_timetableslot_changelist' %}" style="text-decoration: none; color: #64748B; font-weight: 700; font-size: 13px; padding: 10px 18px;">
+          Cancel
+        </a>
+        <button type="submit" class="sims-btn-push">
+          🚀 Push &amp; Publish Timetable to Database
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+  var DAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+
+  var BRANCH_TEMPLATES = {
+    'CSE': {
+      'MON': [{s: 'Theory of Computation & Automata', f: 'Prof. Aniruddh Singh'}, {s: 'Discrete Mathematics & Graph Theory', f: 'Dr. S. Sharma'}, {s: 'Self-Study & Practice Session', f: 'Senior Ex-IITian Faculty'}],
+      'TUE': [{s: 'Design & Analysis of Algorithms', f: 'Prof. Aniruddh Singh'}, {s: 'Computer Networks & TCP/IP', f: 'Prof. K. Verma'}, {s: 'Algorithms Practice Lab', f: 'Senior Ex-IITian Faculty'}],
+      'WED': [{s: 'Database Management Systems (DBMS)', f: 'Dr. S. Sharma'}, {s: 'Operating Systems & Concurrency', f: 'Prof. K. Verma'}, {s: 'OS Kernel Practice & Shell Scripting', f: 'Senior Ex-IITian Faculty'}],
+      'THU': [{s: 'Compiler Design & Syntax Trees', f: 'Prof. Aniruddh Singh'}, {s: 'Digital Logic & Computer Organization', f: 'Prof. K. Verma'}, {s: 'Digital Simulator Practice', f: 'Senior Ex-IITian Faculty'}],
+      'FRI': [{s: 'Engineering Mathematics & Linear Algebra', f: 'Dr. S. Sharma'}, {s: 'General Aptitude & Reasoning Track', f: 'Prof. Aniruddh Singh'}, {s: 'Weekly Grand Mock Prep Session', f: 'Senior Ex-IITian Faculty'}],
+      'SAT': [{s: 'Faculty Doubt Cabin & PYQ Solving', f: 'Prof. Aniruddh Singh'}, {s: 'Weekly CBT Proctored Test (Ranked)', f: 'Test Administration Wing'}, {s: 'Post-Test Detailed Discussion', f: 'Prof. Aniruddh Singh'}]
+    },
+    'CE': {
+      'MON': [{s: 'Structural Analysis & Trusses', f: 'Senior Ex-IITian Faculty'}, {s: 'Strength of Materials', f: 'Dr. S. Sharma'}, {s: 'Civil CAD Lab', f: 'Senior Ex-IITian Faculty'}],
+      'TUE': [{s: 'Geotechnical Engineering & Soil Mechanics', f: 'Senior Ex-IITian Faculty'}, {s: 'Fluid Mechanics & Open Channel', f: 'Prof. Aniruddh Singh'}, {s: 'Soil Lab Problem Session', f: 'Senior Ex-IITian Faculty'}],
+      'WED': [{s: 'Design of Concrete Structures (RCC)', f: 'Senior Ex-IITian Faculty'}, {s: 'Transportation & Highway Engg', f: 'Dr. S. Sharma'}, {s: 'Civil PYQ Practice Session', f: 'Senior Ex-IITian Faculty'}],
+      'THU': [{s: 'Environmental Engineering & Water Quality', f: 'Senior Ex-IITian Faculty'}, {s: 'Hydrology & Irrigation', f: 'Prof. Aniruddh Singh'}, {s: 'Environmental Data Lab', f: 'Senior Ex-IITian Faculty'}],
+      'FRI': [{s: 'Surveying & Geomatics (GPS / GIS)', f: 'Dr. S. Sharma'}, {s: 'Engineering Mathematics for Civil', f: 'Dr. S. Sharma'}, {s: 'Weekly Grand Revision Track', f: 'Senior Ex-IITian Faculty'}],
+      'SAT': [{s: 'Civil Doubt Clinic & PYQ Dissection', f: 'Senior Ex-IITian Faculty'}, {s: 'Civil Engineering CBT Test (Ranked)', f: 'Test Administration Wing'}, {s: 'Civil CBT Paper Discussion', f: 'Senior Ex-IITian Faculty'}]
+    },
+    'DA': {
+      'MON': [{s: 'Probability & Statistics for AI', f: 'Dr. S. Sharma'}, {s: 'Linear Algebra & SVD for ML', f: 'Dr. S. Sharma'}, {s: 'NumPy & SciPy Matrix Lab', f: 'Senior Ex-IITian Faculty'}],
+      'TUE': [{s: 'Machine Learning: Supervised Models & SVM', f: 'Prof. Aniruddh Singh'}, {s: 'Python Data Structures & Complexity', f: 'Prof. K. Verma'}, {s: 'Model Training Lab', f: 'Senior Ex-IITian Faculty'}],
+      'WED': [{s: 'Deep Learning Foundations & Backprop', f: 'Prof. Aniruddh Singh'}, {s: 'SQL & Database Systems for Data Science', f: 'Dr. S. Sharma'}, {s: 'SQL Practice Session', f: 'Senior Ex-IITian Faculty'}],
+      'THU': [{s: 'Unsupervised Learning: Clustering & PCA', f: 'Prof. Aniruddh Singh'}, {s: 'Calculus & Optimization Techniques (SGD)', f: 'Dr. S. Sharma'}, {s: 'Optimization Practice Lab', f: 'Senior Ex-IITian Faculty'}],
+      'FRI': [{s: 'Artificial Intelligence Search & Heuristics', f: 'Prof. Aniruddh Singh'}, {s: 'General Aptitude & Reasoning Track', f: 'Dr. S. Sharma'}, {s: 'GATE DA PYQ Sprint', f: 'Senior Ex-IITian Faculty'}],
+      'SAT': [{s: 'DA Doubt Cabin & Math Clinic', f: 'Dr. S. Sharma'}, {s: 'Data Science & AI Weekly CBT Test', f: 'Test Administration Wing'}, {s: 'GATE DA Score Review & Analysis', f: 'Prof. Aniruddh Singh'}]
+    },
+    'ME': {
+      'MON': [{s: 'Thermodynamics & Power Cycles', f: 'Senior Ex-IITian Faculty'}, {s: 'Strength of Materials', f: 'Dr. S. Sharma'}, {s: 'Mechanical Problem Sheet', f: 'Senior Ex-IITian Faculty'}],
+      'TUE': [{s: 'Fluid Mechanics & Navier-Stokes', f: 'Senior Ex-IITian Faculty'}, {s: 'Theory of Machines & Cams', f: 'Prof. K. Verma'}, {s: 'Vibration Lab & Practice Sheet', f: 'Senior Ex-IITian Faculty'}],
+      'WED': [{s: 'Heat Transfer: Conduction & Radiation', f: 'Senior Ex-IITian Faculty'}, {s: 'Manufacturing Science & Machining', f: 'Dr. S. Sharma'}, {s: 'Manufacturing Practice Session', f: 'Senior Ex-IITian Faculty'}],
+      'THU': [{s: 'Machine Design: Fatigue & Shaft Design', f: 'Prof. K. Verma'}, {s: 'Industrial Engineering & Operations Research', f: 'Dr. S. Sharma'}, {s: 'Simplex Method Practice', f: 'Senior Ex-IITian Faculty'}],
+      'FRI': [{s: 'Engineering Mathematics for Mechanical', f: 'Dr. S. Sharma'}, {s: 'General Aptitude Track', f: 'Dr. S. Sharma'}, {s: 'Mechanical Grand PYQ Sprint', f: 'Senior Ex-IITian Faculty'}],
+      'SAT': [{s: 'Mechanical Doubt Clinic & Discussion', f: 'Senior Ex-IITian Faculty'}, {s: 'Mechanical Engineering CBT Test', f: 'Test Administration Wing'}, {s: 'ME Test Dissection & Cutoff Analysis', f: 'Senior Ex-IITian Faculty'}]
+    }
+  };
+
+  function updateDates() {
+    var dateInput = document.getElementById('id_start_date');
+    if (!dateInput.value) return;
+
+    var parts = dateInput.value.split('-');
+    var startDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    for (var i = 0; i < DAYS.length; i++) {
+      var d = new Date(startDate);
+      d.setDate(startDate.getDate() + i);
+      var headerEl = document.getElementById('date_hdr_' + DAYS[i]);
+      if (headerEl) {
+        headerEl.innerText = months[d.getMonth()] + ' ' + d.getDate();
+      }
+    }
+
+    var endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 5);
+
+    var rangeStr = months[startDate.getMonth()] + ' ' + startDate.getDate() + ' – ' + months[endDate.getMonth()] + ' ' + endDate.getDate() + ', ' + endDate.getFullYear();
+    document.getElementById('range_text').innerText = rangeStr;
+    document.getElementById('id_week_range_label').value = rangeStr;
+  }
+
+  function handleBranchChange() {
+    var branch = document.getElementById('id_branch').value;
+    var week = document.getElementById('id_week_number').value;
+    document.getElementById('status_msg').innerText = 'Selected: ' + branch + ' (Week ' + week + '). Click "Auto-Fill" or "Load Saved" to proceed.';
+  }
+
+  function autoFillBranchTemplate() {
+    var branch = document.getElementById('id_branch').value;
+    var template = BRANCH_TEMPLATES[branch] || BRANCH_TEMPLATES['CSE'];
+
+    DAYS.forEach(function(day) {
+      var daySlots = template[day] || [];
+      daySlots.forEach(function(slotData, idx) {
+        var order = idx + 1;
+        var subInput = document.getElementById('input_sub_' + day + '_' + order);
+        var facInput = document.getElementById('input_fac_' + day + '_' + order);
+        if (subInput) subInput.value = slotData.s;
+        if (facInput) facInput.value = slotData.f;
+      });
+    });
+
+    document.getElementById('status_msg').innerText = '✅ Populated ' + branch + ' schedule template! Click Push to Database when ready.';
+  }
+
+  function loadExistingSlots() {
+    var branch = document.getElementById('id_branch').value;
+    var week = document.getElementById('id_week_number').value;
+    var statusEl = document.getElementById('status_msg');
+    statusEl.innerText = 'Loading database slots for ' + branch + '...';
+
+    fetch('load-slots/?branch=' + encodeURIComponent(branch) + '&week=' + encodeURIComponent(week))
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (data.success && data.slots && data.slots.length > 0) {
+          clearMatrix();
+          data.slots.forEach(function(s) {
+            var subInput = document.getElementById('input_sub_' + s.day + '_' + s.order);
+            var facInput = document.getElementById('input_fac_' + s.day + '_' + s.order);
+            if (subInput) subInput.value = s.subject || '';
+            if (facInput) facInput.value = s.faculty_name || '';
+          });
+          statusEl.innerText = '✅ Loaded ' + data.slots.length + ' saved slots from database for ' + branch + '!';
+        } else {
+          statusEl.innerText = 'ℹ️ No saved slots found for ' + branch + '. Click Auto-Fill to populate defaults.';
+        }
+      })
+      .catch(function(err) {
+        statusEl.innerText = 'Error: ' + err.message;
+      });
+  }
+
+  function clearMatrix() {
+    DAYS.forEach(function(day) {
+      [1, 2, 3].forEach(function(order) {
+        var subInput = document.getElementById('input_sub_' + day + '_' + order);
+        if (subInput) subInput.value = '';
+      });
+    });
+    document.getElementById('status_msg').innerText = 'Cleared all subject inputs.';
+  }
+
+  window.addEventListener('DOMContentLoaded', function() {
+    updateDates();
+  });
+</script>
+{% endblock %}

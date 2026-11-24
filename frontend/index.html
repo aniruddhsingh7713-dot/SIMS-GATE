@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#030507">
+  <meta name="description" content="AIRA — a personal AI assistant exploring natural interaction and desktop automation.">
+
+  <title>AIRA — Intelligence, in motion.</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+
+  <script defer src="https://unpkg.com/lenis@1.3.11/dist/lenis.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.14.2/gsap.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.14.2/ScrollTrigger.min.js"></script>
+  <script defer src="js/main.js"></script>
+</head>
+
+<body>
+  <div class="noise" aria-hidden="true"></div>
+
+  <header class="navbar">
+    <a href="#home" class="brand">
+      <span class="brand-symbol">A</span>
+      <span>AIRA<span class="brand-period">.</span></span>
+    </a>
+
+    <nav class="nav-links">
+      <a href="#about">Our vision</a>
+      <a href="#capabilities">Capabilities</a>
+      <a href="#approach">Our approach</a>
+    </nav>
+
+    <a href="login.html" class="nav-cta">
+      Enter AIRA <span>↗</span>
+    </a>
+  </header>
+
+  <main>
+    <section class="hero" id="home">
+      <div class="hero-grid"></div>
+      <div class="hero-glow"></div>
+
+      <canvas id="starfield" aria-hidden="true"></canvas>
+      <div class="star-wordmark" aria-hidden="true">AIRA</div>
+
+      <div class="hero-copy">
+        <span class="eyebrow reveal">
+          <span class="status-dot"></span>
+          A NEW WAY TO INTERACT
+        </span>
+
+        <h1 class="hero-title reveal">
+          Intelligence,<br>
+          <span>in motion.</span>
+        </h1>
+
+        <p class="hero-description reveal">
+          Meet AIRA. A personal AI assistant exploring
+          natural interaction and desktop control.
+        </p>
+
+        <div class="hero-actions reveal">
+          <a class="button button-primary" href="#about">
+            Discover AIRA <span>↗</span>
+          </a>
+          <a class="button button-quiet" href="#capabilities">
+            Explore capabilities <span>↓</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="orb-stage" id="orbStage" aria-label="AIRA glass orb">
+        <div class="orb-halo"></div>
+        <div class="orb-shadow"></div>
+
+        <div class="orb" id="airaOrb">
+          <div class="orb-inner"></div>
+          <div class="orb-glass"></div>
+          <div class="orb-highlight"></div>
+          <div class="orb-reflection"></div>
+          <div class="orb-rim"></div>
+        </div>
+
+        <div class="orb-caption">
+          <span class="caption-line"></span>
+          ARTIFICIAL INTELLIGENCE · PERSONAL BY DESIGN
+        </div>
+      </div>
+
+      <div class="hero-footer">
+        <span>BUILT FOR THE WAY YOU THINK</span>
+        <a href="#about">SCROLL TO EXPLORE <span>↓</span></a>
+        <span>01 — 04</span>
+      </div>
+    </section>
+
+    <section class="intro section-pad" id="about">
+      <div class="section-label"><span>01</span> THE IDEA</div>
+
+      <div class="intro-content">
+        <p class="overline reveal">LESS FRICTION. MORE FLOW.</p>
+
+        <h2 class="editorial-title reveal">
+          Technology should<br>
+          <span>move with you.</span>
+        </h2>
+
+        <div class="intro-bottom reveal">
+          <p>
+            AIRA is a personal AI assistant project exploring how
+            conversational interaction can connect with everyday
+            desktop tasks. The goal is to make working with your
+            computer feel more natural.
+          </p>
+
+          <a href="#capabilities" class="text-link">
+            Get to know AIRA <span>↘</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="statement">
+      <div class="statement-glow"></div>
+
+      <p class="overline reveal">A DIFFERENT KIND OF INTERFACE</p>
+
+      <h2 class="statement-title reveal">
+        From what you say<br>
+        <span>to what gets done.</span>
+      </h2>
+
+      <p class="statement-copy reveal">
+        Less navigating through menus. More direct,
+        intentional interaction with your digital workspace.
+      </p>
+
+      <div class="statement-orbit" aria-hidden="true">
+        <div></div><div></div><div></div>
+      </div>
+    </section>
+
+    <section class="capabilities section-pad" id="capabilities">
+      <div class="section-label"><span>02</span> WHAT WE'RE BUILDING</div>
+
+      <div class="capabilities-heading">
+        <h2 class="editorial-title reveal">
+          Designed around<br><span>your workflow.</span>
+        </h2>
+
+        <p class="reveal">
+          A closer look at the capabilities shaping AIRA.
+          Actual availability depends on implementation.
+        </p>
+      </div>
+
+      <div class="feature-list">
+        <article class="feature reveal">
+          <span class="feature-number">01</span>
+          <div class="feature-icon" aria-hidden="true">⌘</div>
+          <div class="feature-copy">
+            <h3>Natural-language commands</h3>
+            <p>Express an intention in everyday language and work towards a corresponding desktop action.</p>
+          </div>
+          <span class="feature-arrow">↗</span>
+        </article>
+
+        <article class="feature reveal">
+          <span class="feature-number">02</span>
+          <div class="feature-icon" aria-hidden="true">◉</div>
+          <div class="feature-copy">
+            <h3>Voice-first interaction</h3>
+            <p>Explore conversational interaction through voice input and spoken responses.</p>
+          </div>
+          <span class="feature-arrow">↗</span>
+        </article>
+
+        <article class="feature reveal">
+          <span class="feature-number">03</span>
+          <div class="feature-icon" aria-hidden="true">⌁</div>
+          <div class="feature-copy">
+            <h3>Desktop automation</h3>
+            <p>Connect supported commands to Python-powered desktop actions with clear feedback.</p>
+          </div>
+          <span class="feature-arrow">↗</span>
+        </article>
+
+        <article class="feature reveal">
+          <span class="feature-number">04</span>
+          <div class="feature-icon" aria-hidden="true">✳</div>
+          <div class="feature-copy">
+            <h3>A focused workspace</h3>
+            <p>Bring conversations, command input and assistant feedback into one considered interface.</p>
+          </div>
+          <span class="feature-arrow">↗</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="approach section-pad" id="approach">
+      <div class="section-label"><span>03</span> OUR APPROACH</div>
+
+      <div class="approach-layout">
+        <h2 class="editorial-title reveal">
+          Capable by design.<br>
+          <span>Clear by default.</span>
+        </h2>
+
+        <div class="approach-copy reveal">
+          <p>
+            A useful assistant should communicate what it understood,
+            what it is attempting, and whether an action succeeded.
+          </p>
+
+          <div class="principle">
+            <span>01</span>
+            <div>
+              <h3>Clarity over complexity</h3>
+              <p>Keep the experience direct and understandable.</p>
+            </div>
+          </div>
+
+          <div class="principle">
+            <span>02</span>
+            <div>
+              <h3>Control stays with you</h3>
+              <p>Make supported actions and their outcomes visible.</p>
+            </div>
+          </div>
+
+          <div class="principle">
+            <span>03</span>
+            <div>
+              <h3>Built to evolve</h3>
+              <p>Introduce capabilities incrementally and test them.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="aira-intelligence section-pad" id="aira-intelligence">
+  <div class="section-label"><span>04</span> A DIFFERENT APPROACH</div>
+
+  <div class="analytics-heading">
+    <div>
+      <p class="overline reveal">INTELLIGENCE MEETS EXECUTION</p>
+      <h2 class="editorial-title reveal">
+        Not just answers.<br>
+        <span>A workflow that moves.</span>
+      </h2>
+    </div>
+    <p class="analytics-intro reveal">
+      AIRA is being designed to connect conversational AI with
+      supported desktop actions. The distinction is the workflow,
+      not an unsupported claim that every other assistant works the same way.
+    </p>
+  </div>
+
+  <div class="comparison-panel reveal">
+    <div class="panel-topline">
+      <div>
+        <span class="panel-kicker">CAPABILITY COMPARISON</span>
+        <h3>Different tools, different strengths.</h3>
+      </div>
+      <span class="live-indicator"><i></i> PROJECT OVERVIEW</span>
+    </div>
+
+    <p class="comparison-note">
+      AIRA describes the intended project direction. Other AI assistants
+      vary by product, permissions, integrations and configuration.
+      This is a qualitative design comparison, not a measured benchmark.
+    </p>
+
+    <div class="comparison-table-wrap">
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Capability</th>
+            <th>AIRA project goal</th>
+            <th>General AI assistant</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Conversational input</td>
+            <td><span class="status status-cyan">Planned</span></td>
+            <td><span class="status status-neutral">Product-dependent</span></td>
+          </tr>
+          <tr>
+            <td>Voice interaction</td>
+            <td><span class="status status-cyan">Planned</span></td>
+            <td><span class="status status-neutral">Product-dependent</span></td>
+          </tr>
+          <tr>
+            <td>Local desktop automation</td>
+            <td><span class="status status-violet">Core objective</span></td>
+            <td><span class="status status-neutral">Setup-dependent</span></td>
+          </tr>
+          <tr>
+            <td>Action feedback</td>
+            <td><span class="status status-cyan">Design priority</span></td>
+            <td><span class="status status-neutral">Product-dependent</span></td>
+          </tr>
+          <tr>
+            <td>Custom Python actions</td>
+            <td><span class="status status-violet">Planned integration</span></td>
+            <td><span class="status status-neutral">Integration-dependent</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="comparison-footnote">
+      <span class="footnote-mark">i</span>
+      <span>Statuses describe AIRA's development direction, not verified production availability.</span>
+    </div>
+  </div>
+
+  <div class="analytics-grid">
+    <article class="chart-panel reveal">
+      <div class="chart-header">
+        <div>
+          <span class="panel-kicker">01 / DESIGN PRIORITIES</span>
+          <h3>Where AIRA focuses.</h3>
+        </div>
+        <span class="chart-symbol">◉</span>
+      </div>
+
+      <p class="chart-description">
+        A conceptual view of the product's intended emphasis.
+        These are qualitative design priorities, not measured scores.
+      </p>
+
+      <div class="priority-chart" role="img"
+           aria-label="Conceptual AIRA priorities: desktop actions, conversational interaction, workflow integration and clear feedback.">
+        <div class="priority-row">
+          <div class="priority-label"><span>Desktop actions</span><span>Core</span></div>
+          <div class="priority-track"><span class="priority-fill fill-cyan" style="--bar:92%"></span></div>
+        </div>
+        <div class="priority-row">
+          <div class="priority-label"><span>Natural interaction</span><span>Core</span></div>
+          <div class="priority-track"><span class="priority-fill fill-blue" style="--bar:84%"></span></div>
+        </div>
+        <div class="priority-row">
+          <div class="priority-label"><span>Workflow integration</span><span>Core</span></div>
+          <div class="priority-track"><span class="priority-fill fill-violet" style="--bar:88%"></span></div>
+        </div>
+        <div class="priority-row">
+          <div class="priority-label"><span>Action transparency</span><span>Core</span></div>
+          <div class="priority-track"><span class="priority-fill fill-pink" style="--bar:80%"></span></div>
+        </div>
+      </div>
+
+      <div class="chart-legend">
+        <span><i class="legend-cyan"></i> Product design emphasis</span>
+      </div>
+    </article>
+
+    <article class="chart-panel workflow-panel reveal">
+      <div class="chart-header">
+        <div>
+          <span class="panel-kicker">02 / THE WORKFLOW</span>
+          <h3>From intent to action.</h3>
+        </div>
+        <span class="chart-symbol">↗</span>
+      </div>
+
+      <p class="chart-description">
+        The intended flow of a supported desktop command.
+      </p>
+
+      <div class="workflow-visual">
+        <div class="workflow-node">
+          <span class="workflow-icon">⌁</span>
+          <div><strong>Input</strong><small>Voice or text</small></div>
+          <span class="node-number">01</span>
+        </div>
+        <div class="workflow-connector"><span></span></div>
+        <div class="workflow-node">
+          <span class="workflow-icon icon-blue">◈</span>
+          <div><strong>Interpret</strong><small>Understand intent</small></div>
+          <span class="node-number">02</span>
+        </div>
+        <div class="workflow-connector"><span></span></div>
+        <div class="workflow-node">
+          <span class="workflow-icon icon-violet">⌘</span>
+          <div><strong>Execute</strong><small>Supported action</small></div>
+          <span class="node-number">03</span>
+        </div>
+        <div class="workflow-connector"><span></span></div>
+        <div class="workflow-node">
+          <span class="workflow-icon icon-pink">✓</span>
+          <div><strong>Confirm</strong><small>Report the outcome</small></div>
+          <span class="node-number">04</span>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <div class="metrics-strip reveal">
+    <div class="metric-copy">
+      <span class="panel-kicker">MEASURE WHAT MATTERS</span>
+      <h3>Real results.<br><span>No invented numbers.</span></h3>
+    </div>
+    <p>
+      As AIRA develops, we can measure command success rate,
+      completion time, failure recovery and user effort using
+      repeatable tests. Verified results can then appear here.
+    </p>
+    <div class="metric-badge"><span></span> BENCHMARKS TO COME</div>
+  </div>
+</section>
+<section id="aira-live-demo" class="aira-story-section">
+
+  <div class="aira-story-heading story-reveal">
+    <div>
+      <span class="story-eyebrow"><i></i> AIRA / INTERACTION MODEL</span>
+      <h2>Less typing.<br><span>More getting things done.</span></h2>
+    </div>
+    <p>
+      AIRA is designed around a simple idea: express an intention,
+      let the assistant interpret it, then see what happens.
+    </p>
+  </div>
+
+  <div class="aira-demo-layout">
+
+    <div class="aira-demo-copy story-reveal">
+      <span class="story-index">01 — SEE IT IN MOTION</span>
+      <h3>An idea becomes<br><span>an action.</span></h3>
+      <p>
+        From natural voice input to a supported desktop action,
+        AIRA's intended workflow keeps each step visible.
+      </p>
+
+      <div class="demo-progress-list">
+        <div class="demo-progress-item active" data-demo-step="0">
+          <span class="step-dot">01</span>
+          <div><strong>Listen</strong><small>Capture a voice command</small></div>
+        </div>
+        <div class="demo-progress-item" data-demo-step="1">
+          <span class="step-dot">02</span>
+          <div><strong>Understand</strong><small>Interpret the request</small></div>
+        </div>
+        <div class="demo-progress-item" data-demo-step="2">
+          <span class="step-dot">03</span>
+          <div><strong>Act</strong><small>Run a supported action</small></div>
+        </div>
+        <div class="demo-progress-item" data-demo-step="3">
+          <span class="step-dot">04</span>
+          <div><strong>Confirm</strong><small>Show the outcome</small></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="aira-demo-screen story-reveal" aria-label="Illustrative looping AIRA interface demo">
+      <div class="demo-window-bar">
+        <div class="demo-window-brand"><span class="mini-orb"></span> AIRA <small>INTERACTION PREVIEW</small></div>
+        <div class="window-dots"><i></i><i></i><i></i></div>
+      </div>
+
+      <div class="demo-screen-body">
+        <div class="demo-assistant-status">
+          <span class="status-pulse"></span>
+          <span id="demo-status">LISTENING FOR INPUT</span>
+          <span class="demo-time">LIVE PREVIEW</span>
+        </div>
+
+        <div class="demo-orb-row">
+          <div class="demo-mini-orb">
+            <div class="demo-orb-core"></div>
+            <div class="demo-orb-ring ring-a"></div>
+            <div class="demo-orb-ring ring-b"></div>
+          </div>
+          <div class="demo-orb-caption">
+            <span>PERSONAL ASSISTANT</span>
+            <strong id="demo-mode">Voice interface</strong>
+            <small id="demo-submode">Waiting for a command</small>
+          </div>
+        </div>
+
+        <div class="demo-transcript">
+          <span class="demo-label">USER INPUT <span>MIC / 01</span></span>
+          <div class="demo-waveform" id="demo-waveform" aria-hidden="true">
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+          </div>
+          <p id="demo-command" class="demo-command" aria-live="polite">"Open my workspace and get things ready."</p>
+        </div>
+
+        <div class="demo-process-line">
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+
+        <div class="demo-result" id="demo-result">
+          <div class="demo-result-icon" id="demo-result-icon">⌁</div>
+          <div class="demo-result-copy">
+            <span id="demo-result-label">SYSTEM STATUS</span>
+            <strong id="demo-result-title">Ready to listen</strong>
+            <small id="demo-result-description">Voice interaction preview</small>
+          </div>
+          <span class="demo-result-mark" id="demo-result-mark">○</span>
+        </div>
+      </div>
+
+      <div class="demo-window-footer">
+        <span><i></i> SIMULATED INTERACTION</span>
+        <span>PREVIEW 01 / 04</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="aira-graph-section story-reveal">
+    <div class="graph-heading">
+      <div>
+        <span class="story-index">02 — MEASURE WHAT MATTERS</span>
+        <h3>Performance should be<br><span>measured, not promised.</span></h3>
+      </div>
+      <p>
+        These charts use illustrative sample data to demonstrate
+        how AIRA's real execution metrics can be presented once
+        the backend is ready for repeatable testing.
+      </p>
+    </div>
+
+    <div class="aira-graph-grid aira-live-telemetry" id="aira-live-telemetry">
+      <article class="aira-graph-card aira-live-card">
+        <div class="graph-card-top"><div><span class="graph-kicker">LIVE SYSTEM DATA / 01</span><h4>CPU utilisation</h4></div><span class="graph-unit">REALTIME</span></div>
+        <div class="aira-live-value" id="aira-cpu-value">—<small> %</small></div>
+        <div class="aira-live-graph-wrap"><canvas class="aira-live-canvas" id="aira-cpu-chart" aria-label="Live CPU utilisation graph"></canvas><div class="aira-live-tooltip" id="aira-cpu-tip"></div></div>
+        <p class="graph-footnote" id="aira-cpu-status">Waiting for backend telemetry.</p>
+      </article>
+      <article class="aira-graph-card aira-live-card">
+        <div class="graph-card-top"><div><span class="graph-kicker">LIVE SYSTEM DATA / 02</span><h4>Memory utilisation</h4></div><span class="graph-unit">REALTIME</span></div>
+        <div class="aira-live-value" id="aira-ram-value">—<small> %</small></div>
+        <div class="aira-live-graph-wrap"><canvas class="aira-live-canvas" id="aira-ram-chart" aria-label="Live memory utilisation graph"></canvas><div class="aira-live-tooltip" id="aira-ram-tip"></div></div>
+        <p class="graph-footnote" id="aira-ram-status">Waiting for backend telemetry.</p>
+      </article>
+      <div class="aira-live-empty" id="aira-live-empty"><strong>Waiting for live telemetry</strong>Connect the AIRA backend endpoint at <code>/api/system-status</code>. No sample or invented values are plotted.</div>
+    </div>
+</div>
+  </div>
+
+  <div class="aira-principle story-reveal">
+    <div class="principle-symbol">✳</div>
+    <div>
+      <span class="story-index">03 — THE DESIGN PRINCIPLE</span>
+      <h3>Intelligence you can <span>follow.</span></h3>
+      <p>Make the input visible. Show the action. Confirm the result.</p>
+    </div>
+    <div class="principle-orbit"></div>
+  </div>
+</section><section class="final-cta">
+      <div class="cta-glow"></div>
+
+      <div class="cta-orb" aria-hidden="true">
+        <div class="cta-orb-core"></div>
+      </div>
+
+      <p class="overline reveal">THE NEXT INTERACTION STARTS HERE</p>
+
+      <h2 class="reveal">
+        Meet your new<br><span>digital companion.</span>
+      </h2>
+
+      <p class="reveal">
+        Step into the AIRA workspace and explore what's possible.
+      </p>
+
+      <a href="login.html" class="button button-primary reveal">
+        Enter AIRA <span>↗</span>
+      </a>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <a href="#home" class="brand">
+      <span class="brand-symbol">A</span>
+      <span>AIRA<span class="brand-period">.</span></span>
+    </a>
+
+    <span>PERSONAL AI. PURPOSEFUL INTERACTION.</span>
+    <a href="#home">BACK TO TOP ↑</a>
+    <span>© 2027 AIRA PROJECT</span>
+  </footer>
+</body>
+</html>

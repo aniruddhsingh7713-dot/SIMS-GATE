@@ -1,0 +1,278 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block content %}
+<div class="sims-cbt-preview-container" style="max-width: 1200px; margin: 0 auto; padding: 10px 0;">
+
+  <!-- Staff Preview Mode Banner -->
+  <div style="background: #15271E; border: 1px solid #D4AF37; border-radius: 8px; padding: 12px 20px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; color: #FFFFFF;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span style="font-size: 20px;">👁️</span>
+      <div>
+        <strong style="color: #D4AF37; font-size: 14px;">STAFF CBT PREVIEW MODE</strong>
+        <span style="display: block; font-size: 12px; color: #E2E8F0;">Testing student view for <em>{{ test.title }}</em>. No attempt will be recorded.</span>
+      </div>
+    </div>
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <a href="http://localhost:3000/test-series" target="_blank" style="padding: 6px 12px; background: #0F4336; border: 1px solid #D4AF37; color: #D4AF37; border-radius: 6px; font-size: 12px; font-weight: 700; text-decoration: none;">
+        Open Next.js Portal ↗
+      </a>
+      <a href="{% url 'admin:courses_testseriesitem_change' test.pk %}" style="padding: 6px 12px; background: #334155; color: #FFF; border-radius: 6px; font-size: 12px; text-decoration: none;">
+        &larr; Back to Admin
+      </a>
+    </div>
+  </div>
+
+  <!-- CBT Exam Bar -->
+  <div style="background: #0F172A; border-radius: 8px 8px 0 0; padding: 14px 22px; display: flex; align-items: center; justify-content: space-between; color: #FFFFFF;">
+    <div>
+      <h2 style="margin: 0; font-size: 16px; font-weight: 800; color: #F8FAFC;">{{ test.title }}</h2>
+      <span style="font-size: 12px; color: #94A3B8;">Branch: {{ test.branch }} &bull; Total Marks: {{ test.total_marks }} &bull; Questions: {{ questions|length }}</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <div style="background: #1E293B; border: 1px solid #334155; border-radius: 6px; padding: 6px 14px; text-align: right;">
+        <span style="font-size: 11px; color: #94A3B8; display: block;">TIME REMAINING</span>
+        <strong id="previewTimer" style="font-size: 16px; color: #38BDF8; font-family: monospace;">{{ test.duration_minutes }}:00</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- CBT Two-Column Body -->
+  <div style="display: grid; grid-template-columns: 1fr 300px; gap: 0; background: #FFFFFF; border: 1px solid #CBD5E1; border-top: none; border-radius: 0 0 8px 8px; min-height: 520px;">
+    
+    <!-- Left: Question Workspace -->
+    <div style="padding: 24px; border-right: 1px solid #E2E8F0; display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; border-bottom: 1px solid #F1F5F9; padding-bottom: 10px;">
+          <span id="qHeaderBadge" style="font-size: 14px; font-weight: 800; color: #0F172A;">Question 1</span>
+          <div style="display: flex; gap: 8px; font-size: 12px;">
+            <span id="qMarksBadge" style="background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; padding: 2px 8px; border-radius: 4px; font-weight: 700;">+1.00 Marks</span>
+            <span id="qNegBadge" style="background: #FEF2F2; color: #991B1B; border: 1px solid #FECACA; padding: 2px 8px; border-radius: 4px; font-weight: 700;">-0.33 Negative</span>
+          </div>
+        </div>
+
+        <!-- Question Prompt Text -->
+        <div id="qPromptText" style="font-size: 15px; font-weight: 600; color: #1E293B; line-height: 1.6; margin-bottom: 18px;">
+          <!-- Dynamically populated -->
+        </div>
+
+        <!-- Diagram Preview (if present) -->
+        <div id="qDiagramContainer" style="display: none; margin-bottom: 20px; text-align: center; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 14px;">
+          <img id="qDiagramImg" src="" alt="Diagram" style="max-width: 100%; max-height: 280px; object-fit: contain; border-radius: 4px;">
+        </div>
+
+        <!-- Options Container -->
+        <div id="qOptionsContainer" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px;">
+          <!-- Dynamically populated -->
+        </div>
+
+        <!-- Staff Reveal Solution Toggle -->
+        <div style="margin-top: 14px; padding: 12px 16px; background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 6px;">
+          <button type="button" onclick="toggleExplanation()" style="background: none; border: none; font-size: 12.5px; font-weight: 700; color: #2563EB; cursor: pointer; padding: 0;">
+            🔍 Toggle Answer Key &amp; Explanation (Staff Inspect)
+          </button>
+          <div id="qExplanationBox" style="display: none; margin-top: 10px; font-size: 13px; color: #334155; line-height: 1.5;">
+            <!-- Explanation populated dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation & Action Buttons -->
+      <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #F1F5F9; padding-top: 16px; margin-top: 24px;">
+        <div style="display: flex; gap: 8px;">
+          <button type="button" onclick="clearSelectedOption()" style="padding: 8px 14px; background: #F1F5F9; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 12.5px; font-weight: 600; cursor: pointer;">
+            Clear Response
+          </button>
+          <button type="button" onclick="markForReview()" style="padding: 8px 14px; background: #FEF3C7; border: 1px solid #FCD34D; color: #92400E; border-radius: 6px; font-size: 12.5px; font-weight: 700; cursor: pointer;">
+            Mark for Review
+          </button>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" onclick="prevQuestion()" id="btnPrev" style="padding: 8px 16px; background: #F1F5F9; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">
+            &larr; Previous
+          </button>
+          <button type="button" onclick="saveAndNext()" id="btnNext" style="padding: 8px 18px; background: #059669; border: 1px solid #047857; color: #FFFFFF; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer;">
+            Save &amp; Next &rarr;
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Question Palette -->
+    <div style="padding: 20px; background: #F8FAFC;">
+      <h4 style="margin: 0 0 12px 0; font-size: 13px; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: 0.05em;">
+        Question Palette
+      </h4>
+
+      <!-- Legend -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 11px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #E2E8F0;">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span style="width: 12px; height: 12px; background: #059669; border-radius: 3px;"></span>
+          <span>Answered</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span style="width: 12px; height: 12px; background: #E2E8F0; border-radius: 3px;"></span>
+          <span>Not Answered</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span style="width: 12px; height: 12px; background: #F59E0B; border-radius: 3px;"></span>
+          <span>Marked Review</span>
+        </div>
+      </div>
+
+      <!-- Palette Grid -->
+      <div id="paletteGrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-height: 380px; overflow-y: auto;">
+        <!-- Injected via JS -->
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Data payload for preview simulation -->
+<script>
+  const previewQuestions = [
+    {% for q in questions %}
+    {
+      id: {{ q.id }},
+      order: {{ q.order|default:forloop.counter }},
+      text: "{{ q.question_text|escapejs }}",
+      optA: "{{ q.option_a|escapejs }}",
+      optB: "{{ q.option_b|escapejs }}",
+      optC: "{{ q.option_c|escapejs }}",
+      optD: "{{ q.option_d|escapejs }}",
+      ans: "{{ q.correct_answer|escapejs }}",
+      explanation: "{{ q.explanation|escapejs }}",
+      diagramUrl: "{% if q.diagram_image %}{{ q.diagram_image.url }}{% elif q.diagram_url %}{{ q.diagram_url }}{% endif %}",
+      marks: {{ q.marks|default:1.0 }},
+      negative: {{ q.negative_marks|default:0.33 }}
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+
+  let currentIdx = 0;
+  const userAnswers = {};
+  const reviewFlags = {};
+
+  function renderCurrentQuestion() {
+    if (!previewQuestions.length) {
+      document.getElementById('qPromptText').textContent = "No questions have been added to this test yet.";
+      return;
+    }
+
+    const q = previewQuestions[currentIdx];
+    document.getElementById('qHeaderBadge').textContent = `Question ${currentIdx + 1} of ${previewQuestions.length}`;
+    document.getElementById('qMarksBadge').textContent = `+${parseFloat(q.marks).toFixed(2)} Marks`;
+    document.getElementById('qNegBadge').textContent = `-${parseFloat(q.negative).toFixed(2)} Negative`;
+    document.getElementById('qPromptText').textContent = q.text;
+
+    // Diagram
+    const diagBox = document.getElementById('qDiagramContainer');
+    const diagImg = document.getElementById('qDiagramImg');
+    if (q.diagramUrl) {
+      diagImg.src = q.diagramUrl;
+      diagBox.style.display = 'block';
+    } else {
+      diagBox.style.display = 'none';
+    }
+
+    // Options
+    const optContainer = document.getElementById('qOptionsContainer');
+    const sel = userAnswers[currentIdx];
+    const opts = [
+      { key: 'A', text: q.optA },
+      { key: 'B', text: q.optB },
+      { key: 'C', text: q.optC },
+      { key: 'D', text: q.optD }
+    ];
+
+    optContainer.innerHTML = opts.map(o => `
+      <label style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 6px; border: 1px solid ${sel === o.key ? '#059669' : '#CBD5E1'}; background: ${sel === o.key ? '#ECFDF5' : '#FFFFFF'}; cursor: pointer;">
+        <input type="radio" name="opt_choice" value="${o.key}" ${sel === o.key ? 'checked' : ''} onchange="selectOption('${o.key}')">
+        <strong style="color: #0F172A;">(${o.key})</strong>
+        <span style="color: #334155; font-size: 14px;">${o.text}</span>
+      </label>
+    `).join('');
+
+    // Explanation
+    const expBox = document.getElementById('qExplanationBox');
+    expBox.innerHTML = `
+      <p style="margin: 0 0 6px 0;"><strong>Correct Answer:</strong> <span style="color: #059669; font-weight: 800;">(${q.ans})</span></p>
+      <p style="margin: 0;">${q.explanation || 'No explanation provided.'}</p>
+    `;
+    expBox.style.display = 'none';
+
+    // Buttons
+    document.getElementById('btnPrev').disabled = (currentIdx === 0);
+
+    renderPalette();
+  }
+
+  function selectOption(key) {
+    userAnswers[currentIdx] = key;
+    renderPalette();
+  }
+
+  function clearSelectedOption() {
+    delete userAnswers[currentIdx];
+    renderCurrentQuestion();
+  }
+
+  function markForReview() {
+    reviewFlags[currentIdx] = !reviewFlags[currentIdx];
+    renderPalette();
+  }
+
+  function saveAndNext() {
+    if (currentIdx < previewQuestions.length - 1) {
+      currentIdx++;
+      renderCurrentQuestion();
+    }
+  }
+
+  function prevQuestion() {
+    if (currentIdx > 0) {
+      currentIdx--;
+      renderCurrentQuestion();
+    }
+  }
+
+  function jumpToQuestion(idx) {
+    currentIdx = idx;
+    renderCurrentQuestion();
+  }
+
+  function toggleExplanation() {
+    const expBox = document.getElementById('qExplanationBox');
+    expBox.style.display = (expBox.style.display === 'none') ? 'block' : 'none';
+  }
+
+  function renderPalette() {
+    const grid = document.getElementById('paletteGrid');
+    if (!grid) return;
+    grid.innerHTML = previewQuestions.map((q, idx) => {
+      const isCur = idx === currentIdx;
+      const isAns = userAnswers[idx] !== undefined;
+      const isRev = reviewFlags[idx];
+
+      let bg = '#E2E8F0';
+      let fg = '#334155';
+      if (isRev) { bg = '#F59E0B'; fg = '#FFFFFF'; }
+      else if (isAns) { bg = '#059669'; fg = '#FFFFFF'; }
+
+      const border = isCur ? '2px solid #0F172A' : '1px solid transparent';
+
+      return `
+        <button type="button" onclick="jumpToQuestion(${idx})" style="padding: 8px; border-radius: 6px; background: ${bg}; color: ${fg}; border: ${border}; font-weight: 700; cursor: pointer;">
+          ${idx + 1}
+        </button>
+      `;
+    }).join('');
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    renderCurrentQuestion();
+  });
+</script>
+{% endblock %}

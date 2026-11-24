@@ -1,0 +1,3217 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+  &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+  &rsaquo; <a href="{% url 'admin:courses_testquestion_changelist' %}">Question Bank</a>
+  &rsaquo; <span>Intelligent Test Paper Generator &amp; Bulk Import</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="sims-saas-layout">
+  {% csrf_token %}
+
+  <!-- =========================================================================
+       1. PROFESSIONAL EDUCATIONAL SAAS SIDEBAR
+       ========================================================================= -->
+  <aside class="sims-saas-sidebar">
+    <div class="sims-sidebar-brand">
+      <div class="sims-brand-crest">S</div>
+      <div class="sims-brand-info">
+        <span class="sims-brand-title">SIMS GATE</span>
+        <span class="sims-brand-sub">Academic Platform</span>
+      </div>
+    </div>
+
+    <div class="sims-sidebar-section-label">EXAMINATION &amp; CBT</div>
+    <nav class="sims-sidebar-nav">
+      <a href="{% url 'admin:index' %}" class="sims-nav-item">
+        <span class="sims-nav-icon">📊</span>
+        <span>Dashboard</span>
+      </a>
+
+      <a href="{% url 'admin:courses_testquestion_changelist' %}" class="sims-nav-item">
+        <span class="sims-nav-icon">📚</span>
+        <span>Question Bank</span>
+      </a>
+
+      <a href="{% url 'admin:courses_testquestion_bulk_import' %}" class="sims-nav-item active">
+        <span class="sims-nav-icon">📥</span>
+        <span>Bulk Import</span>
+        <span class="sims-nav-tag">AI / OCR</span>
+      </a>
+
+      <a href="#step-generator" onclick="goToStep(4); return false;" class="sims-nav-item">
+        <span class="sims-nav-icon">⚙️</span>
+        <span>Test Paper Generator</span>
+      </a>
+
+      <a href="{% url 'admin:courses_testseriesitem_changelist' %}" class="sims-nav-item">
+        <span class="sims-nav-icon">📝</span>
+        <span>Test Management</span>
+      </a>
+
+      <div class="sims-sidebar-section-label">ACADEMIC STRUCTURE</div>
+
+      <a href="{% url 'admin:courses_coursemodule_changelist' %}" class="sims-nav-item">
+        <span class="sims-nav-icon">🏷️</span>
+        <span>Subjects</span>
+      </a>
+
+      <a href="{% url 'admin:courses_studymaterial_changelist' %}" class="sims-nav-item">
+        <span class="sims-nav-icon">📑</span>
+        <span>Topics &amp; Notes</span>
+      </a>
+
+      <a href="{% url 'admin:courses_studentenrollment_changelist' %}" class="sims-nav-item">
+        <span class="sims-nav-icon">👥</span>
+        <span>Students</span>
+      </a>
+
+      <div class="sims-sidebar-section-label">INSIGHTS &amp; SYSTEM</div>
+
+      <a href="/api/dashboard/test-series/analytics/" target="_blank" class="sims-nav-item">
+        <span class="sims-nav-icon">📈</span>
+        <span>Analytics</span>
+      </a>
+
+      <a href="{% url 'admin:accounts_userprofile_changelist' %}" class="sims-nav-item">
+        <span class="sims-nav-icon">🛡️</span>
+        <span>Settings &amp; Access</span>
+      </a>
+    </nav>
+
+    <!-- Quick Target Test Summary in Sidebar -->
+    <div class="sims-sidebar-widget">
+      <div class="sims-widget-header">
+        <span>Target CBT Test</span>
+        <span id="sidebarTestBranchBadge" class="sims-badge-sm">CSE</span>
+      </div>
+      <div id="sidebarTestTitle" class="sims-widget-body">All India Open Mock</div>
+      <div class="sims-widget-footer">
+        <span id="sidebarTestCount">0</span> Current Questions
+      </div>
+    </div>
+  </aside>
+
+  <!-- =========================================================================
+       2. MAIN APPLICATION WORKSPACE CANVAS
+       ========================================================================= -->
+  <main class="sims-saas-main">
+
+    <!-- Global Floating Toast Notification -->
+    <div id="simsGlobalToast" style="display:none; position:fixed; top:28px; right:28px; z-index:999999; min-width:320px; max-width:480px; padding:14px 20px; border-radius:10px; box-shadow:0 10px 35px rgba(0,0,0,0.6); font-size:13.5px; font-weight:600; line-height:1.45; transition:all 0.3s ease;"></div>
+
+    <!-- Top Workspace Header Strip -->
+    <header class="sims-workspace-header">
+      <div>
+        <div class="sims-header-pill">
+          <span class="sims-pulse-dot"></span>
+          <span>GATE Examination Pipeline &bull; Intelligent Document Ingestion</span>
+        </div>
+        <h1 class="sims-workspace-title">Intelligent Bulk Question Import &amp; Test Paper Generator</h1>
+        <p class="sims-workspace-subtitle">
+          Extract exam questions from Hindi, English, and Gujarati PDFs, automatically detect language, balance 1-mark &amp; 2-mark distributions, distinguish MCQ/MSQs, and generate verified test papers.
+        </p>
+      </div>
+
+      <div class="sims-header-actions">
+        <button type="button" class="sims-btn sims-btn-outline" onclick="loadSamplePaper('hindi')">
+          <span>🇮🇳 Sample Hindi 10-Q</span>
+        </button>
+        <button type="button" class="sims-btn sims-btn-outline" onclick="loadSamplePaper('english')">
+          <span>🇬🇧 Sample English 10-Q</span>
+        </button>
+        <button type="button" class="sims-btn sims-btn-secondary" onclick="resetPipeline()">
+          <span>↺ Reset</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Targeted Test Series Portal Selector Bar -->
+    <div class="sims-target-bar" style="background: linear-gradient(135deg, #0A1E17 0%, #0F382B 100%); border: 1.5px solid #2B6E59; border-radius: 14px; padding: 18px 22px; box-shadow: 0 4px 16px rgba(0,0,0,0.25); margin-bottom: 24px;">
+      <div style="display:flex; flex-direction:column; gap:14px; width:100%;">
+        
+        <!-- Header row of the selector -->
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; border-bottom: 1px solid rgba(167,243,208,0.15); padding-bottom: 10px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:20px;">🎯</span>
+            <div>
+              <strong style="color:#FFFFFF; font-size:15px; letter-spacing:0.3px; display:block;">Target Test Series (Student Purchase Package)</strong>
+              <span style="color:#A7F3D0; font-size:11.5px;">Select the Test Series to add papers to. New tests automatically increment (e.g., Test No 2) and appear directly in the purchased student portal.</span>
+            </div>
+          </div>
+          <div id="seriesActiveStatusBadge" style="display:inline-flex; align-items:center; gap:8px; font-size:12px; font-weight:700; background:#05241B; border:1px solid #10B981; color:#34D399; padding:5px 12px; border-radius:8px;">
+            <span>⏳ Loading series status...</span>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 2fr 1.6fr 1fr; gap:16px; align-items:flex-end;">
+          
+          <!-- 1. Test Series Dropdown -->
+          <div>
+            <label style="display:block; color:#D1FAE5; font-size:11.5px; font-weight:700; text-transform:uppercase; margin-bottom:6px; letter-spacing:0.5px;">
+              1. Select Test Series Course:
+            </label>
+            <select id="target_series_id" onchange="onSeriesChange()" class="sims-select" style="background:#05241B; border:1.5px solid #34D399; color:#FFFFFF; font-weight:700; font-size:13px; padding:10px 14px; border-radius:8px; width:100%;">
+              <option value="">-- Choose a Target Test Series --</option>
+              {% for s in series_list %}
+              <option value="{{ s.id }}" data-branch="{{ s.branch }}" data-tests-count="{{ s.active_tests_count }}" data-next-num="{{ s.next_test_number }}" data-title="{{ s.title }}" {% if preselected_series_id == s.id|stringformat:"s" %}selected{% endif %}>
+                [{{ s.branch }}] {{ s.title }} &bull; ({{ s.active_tests_count }} paper{{ s.active_tests_count|pluralize }} active)
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- 2. Target Paper Option: Create Next Test #X OR Update Existing -->
+          <div>
+            <label style="display:block; color:#D1FAE5; font-size:11.5px; font-weight:700; text-transform:uppercase; margin-bottom:6px; letter-spacing:0.5px;">
+              2. Test Action / Assignment:
+            </label>
+            <select id="target_test_action" onchange="onTestActionChange()" class="sims-select" style="background:#05241B; border:1.5px solid #34D399; color:#FDE047; font-weight:700; font-size:13px; padding:10px 14px; border-radius:8px; width:100%;">
+              <option value="__NEW__">✨ Create Next Test Paper</option>
+            </select>
+            <!-- Hidden inputs for backward compatibility -->
+            <input type="hidden" id="target_test_id" value="__NEW__">
+            <input type="hidden" id="target_branch" value="ALL">
+          </div>
+
+          <!-- 3. Distribution Pattern -->
+          <div>
+            <label style="display:block; color:#D1FAE5; font-size:11.5px; font-weight:700; text-transform:uppercase; margin-bottom:6px; letter-spacing:0.5px;">
+              3. Marks Distribution:
+            </label>
+            <select id="target_pattern" onchange="onPatternChange()" class="sims-select" style="background:#05241B; border:1px solid #2B6E59; color:#FFFFFF; font-weight:600; font-size:12px; padding:10px 12px; border-radius:8px; width:100%;">
+              <option value="balanced" selected>⚖️ Balanced 50/50 (1M &amp; 2M)</option>
+              <option value="all_one_mark">1️⃣ All 1-Mark</option>
+              <option value="all_two_mark">2️⃣ All 2-Mark</option>
+              <option value="custom">⚙️ Custom Marks</option>
+            </select>
+          </div>
+
+        </div>
+
+        <!-- Dynamic Information Banner -->
+        <div id="seriesSummaryBanner" style="background:rgba(5, 36, 27, 0.7); border:1px solid rgba(52, 211, 153, 0.3); border-radius:8px; padding:10px 16px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; font-size:12px; color:#E2E8F0;">
+          <div id="seriesSummaryText">
+            💡 Choose a Test Series above. For example, <strong>GATE Chemical Engineering (CH)</strong> currently has 1 paper active — selecting it will automatically prepare <strong>Test No. 2</strong> for import!
+          </div>
+          <div id="seriesExistingChips" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 5-STEP WORKFLOW STEPPER BAR -->
+    <nav class="sims-stepper-bar">
+      <div id="step-btn-1" class="sims-step active" onclick="goToStep(1)">
+        <div class="sims-step-num">1</div>
+        <div class="sims-step-text">
+          <span class="sims-step-label">Step 1</span>
+          <span class="sims-step-name">Upload Document</span>
+        </div>
+      </div>
+      <div class="sims-step-connector"></div>
+
+      <div id="step-btn-2" class="sims-step" onclick="goToStep(2)">
+        <div class="sims-step-num">2</div>
+        <div class="sims-step-text">
+          <span class="sims-step-label">Step 2</span>
+          <span class="sims-step-name">Processing</span>
+        </div>
+      </div>
+      <div class="sims-step-connector"></div>
+
+      <div id="step-btn-3" class="sims-step" onclick="goToStep(3)">
+        <div class="sims-step-num">3</div>
+        <div class="sims-step-text">
+          <span class="sims-step-label">Step 3</span>
+          <span class="sims-step-name">Question Review</span>
+        </div>
+      </div>
+      <div class="sims-step-connector"></div>
+
+      <div id="step-btn-4" class="sims-step" onclick="goToStep(4)">
+        <div class="sims-step-num">4</div>
+        <div class="sims-step-text">
+          <span class="sims-step-label">Step 4</span>
+          <span class="sims-step-name">Test Configuration</span>
+        </div>
+      </div>
+      <div class="sims-step-connector"></div>
+
+      <div id="step-btn-5" class="sims-step" onclick="goToStep(5)">
+        <div class="sims-step-num">5</div>
+        <div class="sims-step-text">
+          <span class="sims-step-label">Step 5</span>
+          <span class="sims-step-name">Preview &amp; Publish</span>
+        </div>
+      </div>
+    </nav>
+
+    <!-- =========================================================================
+         STEP 1: UPLOAD PDF & DOCUMENT INGESTION
+         ========================================================================= -->
+    <section id="step-pane-1" class="sims-step-pane active">
+      <div class="sims-card">
+        <div class="sims-card-header">
+          <div>
+            <h2 class="sims-card-title">Step 1 — Upload Examination Document</h2>
+            <p class="sims-card-desc">Drag and drop any PDF, JSON, CSV question paper or paste examination text.</p>
+          </div>
+          <div class="sims-tab-group">
+            <button type="button" class="sims-tab-btn active" id="tabUploadBtn" onclick="switchUploadTab('file')">📁 Upload PDF / File</button>
+            <button type="button" class="sims-tab-btn" id="tabPasteBtn" onclick="switchUploadTab('paste')">📋 Paste Raw Text</button>
+          </div>
+        </div>
+
+        <div class="sims-card-body">
+          <!-- File Drop Zone -->
+          <div id="tab-pane-file">
+            <div id="dropZone" class="sims-dropzone" onclick="document.getElementById('fileInput').click()" style="text-align: center; padding: 38px 24px; border: 2px dashed #CBD5E1; border-radius: 16px; background: #F8FAFC; cursor: pointer; transition: all 0.25s ease;">
+              
+              <!-- Clean Emerald Icon Badge -->
+              <div style="width: 60px; height: 60px; margin: 0 auto 14px auto; border-radius: 50%; background: #ECFDF5; border: 1.5px solid #A7F3D0; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.12);">
+                📥
+              </div>
+
+              <h3 style="font-size: 18px; font-weight: 700; color: #0F172A; margin: 0 0 6px 0;">
+                Click to Browse or Drag &amp; Drop Question Paper (PDF or Image)
+              </h3>
+              
+              <p style="max-width: 560px; margin: 0 auto 20px auto; font-size: 13.5px; color: #475569; line-height: 1.5;">
+                Upload exam papers in PDF, PNG, or JPG format. Automatically recognizes questions, circuits, chemical schematics, formulas, and diagrams (Max 50MB).
+              </p>
+              
+              <!-- File Picker Trigger Button -->
+              <div style="margin: 0 auto 20px auto; display: inline-flex; align-items: center; gap: 12px;" onclick="event.stopPropagation()">
+                <input type="file" id="fileInput" accept=".pdf,.png,.jpg,.jpeg,.webp,.bmp,.json,.csv,.txt,application/pdf,image/*" style="display: none;" onchange="if(this.files && this.files.length > 0) handleFileSelect(this.files[0]);">
+                
+                <button type="button" class="sims-btn sims-btn-primary" onclick="document.getElementById('fileInput').click()" style="padding: 12px 28px; font-size: 14px; font-weight: 700; border-radius: 10px; background: #059669; color: #FFFFFF; border: none; box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35); cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                  📁 Browse &amp; Select Paper (PDF / Image)
+                </button>
+              </div>
+
+              <!-- Format Pills -->
+              <div class="sims-format-pills" style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                <span class="sims-format-pill" style="font-size: 11.5px; font-weight: 600; background: #FFFFFF; border: 1px solid #E2E8F0; padding: 4px 12px; border-radius: 20px; color: #334155;">📄 PDF Papers</span>
+                <span class="sims-format-pill" style="font-size: 11.5px; font-weight: 600; background: #FFFFFF; border: 1px solid #E2E8F0; padding: 4px 12px; border-radius: 20px; color: #334155;">🖼️ Question Images (PNG/JPG)</span>
+                <span class="sims-format-pill" style="font-size: 11.5px; font-weight: 600; background: #FFFFFF; border: 1px solid #E2E8F0; padding: 4px 12px; border-radius: 20px; color: #334155;">🇮🇳 Hindi • English • Bilingual</span>
+                <span class="sims-format-pill" style="font-size: 11.5px; font-weight: 600; background: #FFFFFF; border: 1px solid #E2E8F0; padding: 4px 12px; border-radius: 20px; color: #334155;">🔬 Diagrams &amp; Circuits</span>
+              </div>
+            </div>
+
+            <!-- Selected File Card (Light Emerald Theme) -->
+            <div id="selectedFileCard" class="sims-file-card" style="display: none; align-items: center; justify-content: space-between; padding: 18px 24px; background: #F0FDF4; border: 2px solid #059669; border-radius: 14px; margin-bottom: 16px; box-shadow: 0 4px 14px rgba(5, 150, 105, 0.12);">
+              <div class="sims-file-meta" style="display: flex; align-items: center; gap: 16px;">
+                <div style="width: 50px; height: 50px; border-radius: 12px; background: #DCFCE7; border: 1.5px solid #86EFAC; display: flex; align-items: center; justify-content: center; font-size: 26px;">
+                  📄
+                </div>
+                <div>
+                  <div id="fileName" class="sims-file-name" style="font-size: 16px; font-weight: 700; color: #0F172A;">filename.pdf</div>
+                  <div id="fileSize" class="sims-file-size" style="font-size: 13px; font-weight: 600; color: #059669; margin-top: 3px;">0 KB &bull; Uploading &amp; Extracting questions...</div>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <button type="button" class="sims-btn sims-btn-primary" onclick="startIntelligentExtraction()" style="padding: 10px 22px; font-size: 13.5px; font-weight: 700; border-radius: 8px; background: #059669; color: #FFFFFF; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                  ⚡ Extract Questions Now &rarr;
+                </button>
+                <button type="button" onclick="clearSelectedFile()" title="Choose another file" style="padding: 10px 16px; font-size: 13px; font-weight: 600; border-radius: 8px; background: #FFFFFF; border: 1.5px solid #CBD5E1; color: #475569; cursor: pointer;">
+                  🔄 Change File
+                </button>
+              </div>
+            </div>
+
+            <!-- Instant Sample Paper Bar (Clean Light Theme) -->
+            <div style="margin-top: 16px; padding: 14px 20px; background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 20px;">⚡</span>
+                <div>
+                  <div style="font-size: 13px; font-weight: 700; color: #0F172A;">Instant 1-Click Verification:</div>
+                  <div style="font-size: 12px; color: #64748B;">Want to test immediately without searching for a PDF?</div>
+                </div>
+              </div>
+              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button type="button" onclick="loadSamplePaper('english')" style="font-size: 12.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; background: #FFFFFF; border: 1.5px solid #059669; color: #059669; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+                  📘 Sample English Paper (GATE CS &bull; 10 Qs)
+                </button>
+                <button type="button" onclick="loadSamplePaper('hindi')" style="font-size: 12.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; background: #FFFFFF; border: 1.5px solid #D97706; color: #B45309; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+                  📙 Sample Hindi Paper (Physics &bull; 10 Qs)
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Paste Raw Text Zone -->
+          <div id="tab-pane-paste" style="display: none;">
+            <label class="sims-field-label">Paste Questions (Numbered with Q1., प्रश्न 1, options A-D, Ans, Explanation):</label>
+            <textarea id="rawTextarea" rows="12" class="sims-textarea" placeholder="प्रश्न 1. भार का SI मात्रक क्या है?&#10;(A) किलोग्राम&#10;(B) न्यूटन&#10;(C) पास्कल&#10;(D) जूल&#10;उत्तर: (B)&#10;&#10;Q2. What is the time complexity of QuickSort?&#10;(A) O(n)&#10;(B) O(n log n)&#10;(C) O(n^2)&#10;(D) O(1)&#10;Ans: C"></textarea>
+          </div>
+        </div>
+
+        <div class="sims-card-footer">
+          <div class="sims-footer-tip">
+            💡 <strong>Strict Rule Guaranteed:</strong> Hindi questions are NEVER auto-translated into English. Original language and formatting are preserved.
+          </div>
+          <button type="button" id="startExtractionBtn" class="sims-btn sims-btn-primary" onclick="startIntelligentExtraction()">
+            <span>⚡ Start Intelligent Extraction &amp; Analysis &rarr;</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         STEP 2: PROCESSING & COGNITIVE ANALYSIS
+         ========================================================================= -->
+    <section id="step-pane-2" class="sims-step-pane">
+      <div class="sims-card">
+        <div class="sims-card-header">
+          <div>
+            <h2 class="sims-card-title">Step 2 — Intelligent Processing Pipeline</h2>
+            <p class="sims-card-desc">Extracting content, detecting language, analyzing question structures, and allocating marks.</p>
+          </div>
+          <span id="processingStatusBadge" class="sims-status-badge in-progress">Processing</span>
+        </div>
+
+        <div class="sims-card-body">
+          <!-- Progress Bar -->
+          <div class="sims-progress-container">
+            <div class="sims-progress-header">
+              <span id="processingStageText" class="sims-stage-text">Initializing document parser...</span>
+              <span id="processingPercentText" class="sims-percent-text">0%</span>
+            </div>
+            <div class="sims-progress-track">
+              <div id="processingProgressBar" class="sims-progress-fill" style="width: 0%;"></div>
+            </div>
+          </div>
+
+          <!-- Real Processing Stage Checklist -->
+          <div class="sims-checklist">
+            <div id="check-stage-1" class="sims-check-item">
+              <span class="sims-check-icon">⏳</span>
+              <div class="sims-check-info">
+                <strong>1. Extract Questions &amp; Diagrams</strong>
+                <p>Extracting raw question blocks, Unicode fonts, circuit diagrams, and mathematical formulations.</p>
+              </div>
+            </div>
+
+            <div id="check-stage-2" class="sims-check-item">
+              <span class="sims-check-icon">⏳</span>
+              <div class="sims-check-info">
+                <strong>2. Automatic Language Detection</strong>
+                <p>Analyzing Devanagari, Gujarati, or Latin character density to preserve original source language without translation.</p>
+              </div>
+            </div>
+
+            <div id="check-stage-3" class="sims-check-item">
+              <span class="sims-check-icon">⏳</span>
+              <div class="sims-check-info">
+                <strong>3. MCQ, MSQ &amp; NAT Question Classification</strong>
+                <p>Evaluating single vs multiple correct answer keys, cognitive complexity, and option sets.</p>
+              </div>
+            </div>
+
+            <div id="check-stage-4" class="sims-check-item">
+              <span class="sims-check-icon">⏳</span>
+              <div class="sims-check-info">
+                <strong>4. Intelligent Marks Distribution (1-Mark &amp; 2-Mark Allocation)</strong>
+                <p>Applying balanced 50/50 distribution (5×1M + 5×2M = 15 Marks for 10 Qs) and prioritizing original marks.</p>
+              </div>
+            </div>
+
+            <div id="check-stage-5" class="sims-check-item">
+              <span class="sims-check-icon">⏳</span>
+              <div class="sims-check-info">
+                <strong>5. Duplicate Detection &amp; Validation Audit</strong>
+                <p>Checking token similarity against existing questions and validating option integrity before review.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         STEP 3: QUESTION REVIEW (EDITABLE TABLE)
+         ========================================================================= -->
+    <section id="step-pane-3" class="sims-step-pane">
+      <div class="sims-card">
+        <!-- Review KPI Banner -->
+        <div class="sims-review-kpi-bar">
+          <div class="sims-kpi-metric">
+            <span class="sims-kpi-lbl">Detected Language</span>
+            <span id="kpiLanguage" class="sims-kpi-val highlight">English</span>
+          </div>
+          <div class="sims-kpi-metric">
+            <span class="sims-kpi-lbl">Total Questions</span>
+            <span id="kpiTotalQuestions" class="sims-kpi-val">0</span>
+          </div>
+          <div class="sims-kpi-metric">
+            <span class="sims-kpi-lbl">1-Mark Questions</span>
+            <span id="kpiOneMarkCount" class="sims-kpi-val">0</span>
+          </div>
+          <div class="sims-kpi-metric">
+            <span class="sims-kpi-lbl">2-Mark Questions</span>
+            <span id="kpiTwoMarkCount" class="sims-kpi-val">0</span>
+          </div>
+          <div class="sims-kpi-metric">
+            <span class="sims-kpi-lbl">Total Marks</span>
+            <span id="kpiTotalMarks" class="sims-kpi-val gold">0.00</span>
+          </div>
+          <div class="sims-kpi-metric">
+            <span class="sims-kpi-lbl">Validation Status</span>
+            <span id="kpiValidationBadge" class="sims-badge-success">Ready</span>
+          </div>
+        </div>
+
+        <div class="sims-card-header">
+          <div>
+            <h2 class="sims-card-title">Step 3 — Question Review &amp; Quality Audit</h2>
+            <p class="sims-card-desc">Review extracted questions, check language fidelity, edit marks, options, and inspect validation flags.</p>
+          </div>
+          <div class="sims-table-actions">
+            <button type="button" class="sims-btn sims-btn-sm" onclick="rebalanceMarks('balanced')">⚖️ Auto-Balance (50/50)</button>
+            <button type="button" class="sims-btn sims-btn-sm" onclick="addBlankQuestion()">＋ Add Blank Question</button>
+            <button type="button" class="sims-btn sims-btn-sm sims-btn-danger" onclick="clearExtractedQuestions()">Clear</button>
+          </div>
+        </div>
+
+        <!-- Overlap Layout Banner -->
+        <div id="batchLayoutBanner" style="display: none; margin: 14px 20px 0; padding: 12px 18px; background: #FFFBEB; border: 1px solid #FCD34D; border-left: 5px solid #D97706; border-radius: 6px; color: #92400E; font-size: 13px; font-weight: 600;">
+          ⚠️ <span id="batchLayoutBannerText">Layout problem in source PDF: diagram overlaps options on pages 2, 3. Text was read correctly from the PDF; please check the diagram images.</span>
+        </div>
+
+        <!-- Model Attribution & Real Extraction Banner -->
+        <div id="importModelBanner" style="display: none; margin: 10px 20px 0; padding: 8px 14px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; font-size: 12px; color: #475569; font-weight: 600;">
+          🤖 <span id="modelUsedName">Model used: PyMuPDF Vector Engine &amp; Tesseract v5 | Source: real extraction</span>
+        </div>
+
+        <!-- Keyboard Shortcuts Help Line -->
+        <div class="sims-shortcuts-help-line" style="margin: 10px 20px 0; padding: 8px 14px; background: #0F172A; color: #E2E8F0; border-radius: 6px; font-size: 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <span style="color: #D4AF37; font-weight: 800;">⌨ Shortcuts:</span>
+            <span><kbd style="background:#334155; padding:2px 6px; border-radius:4px;">J</kbd> / <kbd style="background:#334155; padding:2px 6px; border-radius:4px;">↓</kbd> Next</span>
+            <span><kbd style="background:#334155; padding:2px 6px; border-radius:4px;">K</kbd> / <kbd style="background:#334155; padding:2px 6px; border-radius:4px;">↑</kbd> Prev</span>
+            <span><kbd style="background:#334155; padding:2px 6px; border-radius:4px;">1-4</kbd> Set Option A-D</span>
+            <span><kbd style="background:#334155; padding:2px 6px; border-radius:4px;">A</kbd> Approve</span>
+            <span><kbd style="background:#334155; padding:2px 6px; border-radius:4px;">D</kbd> Debug / Inspect</span>
+          </div>
+          <span id="autosaveIndicator" style="font-weight: 700; color: #34D399; font-size: 11.5px;">✓ All drafts saved</span>
+        </div>
+
+        <!-- Filter Chips Row & Approval Progress Line -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin: 12px 20px; flex-wrap: wrap; gap: 10px;">
+          <div id="reviewFilterChips" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <button type="button" class="sims-chip active" onclick="setReviewFilter('all')" id="chip-all" style="padding: 4px 12px; border-radius: 999px; border: 1px solid #0F4336; background: #0F4336; color: #FFF; font-size: 12px; font-weight: 700; cursor: pointer;">All (<span id="count-all">0</span>)</button>
+            <button type="button" class="sims-chip" onclick="setReviewFilter('needs_review')" id="chip-needs_review" style="padding: 4px 12px; border-radius: 999px; border: 1px solid #CBD5E1; background: #F8FAFC; color: #475569; font-size: 12px; font-weight: 600; cursor: pointer;">Needs review (<span id="count-needs_review">0</span>)</button>
+            <button type="button" class="sims-chip" onclick="setReviewFilter('approved')" id="chip-approved" style="padding: 4px 12px; border-radius: 999px; border: 1px solid #CBD5E1; background: #F8FAFC; color: #475569; font-size: 12px; font-weight: 600; cursor: pointer;">Approved (<span id="count-approved">0</span>)</button>
+            <button type="button" class="sims-chip" onclick="setReviewFilter('overlap')" id="chip-overlap" style="padding: 4px 12px; border-radius: 999px; border: 1px solid #CBD5E1; background: #F8FAFC; color: #475569; font-size: 12px; font-weight: 600; cursor: pointer;">Overlap flagged (<span id="count-overlap">0</span>)</button>
+            <button type="button" class="sims-chip" onclick="setReviewFilter('missing_answer')" id="chip-missing_answer" style="padding: 4px 12px; border-radius: 999px; border: 1px solid #CBD5E1; background: #F8FAFC; color: #475569; font-size: 12px; font-weight: 600; cursor: pointer;">Missing answer (<span id="count-missing_answer">0</span>)</button>
+          </div>
+          <div style="font-size: 13px; font-weight: 700; color: #1E293B;">
+            <span id="approvalProgressLine">0 of 0 approved</span>
+          </div>
+        </div>
+
+        <div class="sims-card-body p-0">
+          <div class="sims-table-responsive">
+            <table class="sims-table" id="questionsReviewTable">
+              <thead>
+                <tr>
+                  <th style="width: 50px;">#</th>
+                  <th>Question Preview</th>
+                  <th style="width: 100px;">Language</th>
+                  <th style="width: 90px;">Type</th>
+                  <th style="width: 90px;">Marks</th>
+                  <th style="width: 80px;">Negative</th>
+                  <th style="width: 180px;">Options (A, B, C, D)</th>
+                  <th style="width: 90px;">Correct</th>
+                  <th style="width: 110px;">Status</th>
+                  <th style="width: 100px; text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="questionsTableBody">
+                <!-- Injected via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="sims-card-footer">
+          <button type="button" class="sims-btn sims-btn-secondary" onclick="goToStep(1)">
+            &larr; Back to Upload
+          </button>
+          <button type="button" class="sims-btn sims-btn-primary" onclick="goToStep(4)">
+            Proceed to Test Configuration &rarr;
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         STEP 4: TEST CONFIGURATION & LIVE MARKS CALCULATION
+         ========================================================================= -->
+    <section id="step-pane-4" class="sims-step-pane">
+      <div class="sims-grid-2col">
+
+        <!-- Form Column -->
+        <div class="sims-card">
+          <div class="sims-card-header">
+            <h2 class="sims-card-title">Step 4 — Examination Parameters</h2>
+            <p class="sims-card-desc">Define paper metadata, exam discipline, and test guidelines.</p>
+          </div>
+
+          <div class="sims-card-body">
+            <div class="sims-form-group">
+              <label class="sims-field-label">Test Paper Title *</label>
+              <input type="text" id="cfg_title" class="sims-input" placeholder="e.g. All India Open Mock #05 (GATE 2026 Full Syllabus)">
+            </div>
+
+            <div class="sims-form-row">
+              <div class="sims-form-group">
+                <label class="sims-field-label">Discipline / Branch *</label>
+                <select id="cfg_branch" class="sims-select" onchange="syncBranchWithSeries()">
+                  {% for b in branches %}<option value="{{ b }}">{{ b }}</option>{% endfor %}
+                </select>
+              </div>
+
+              <div class="sims-form-group">
+                <label class="sims-field-label">Test Type *</label>
+                <select id="cfg_type" class="sims-select">
+                  {% for t in test_types %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+                </select>
+              </div>
+            </div>
+
+            <div class="sims-form-group">
+              <label class="sims-field-label">Assigned Test Series Package (Purchase Dependency) *</label>
+              <select id="cfg_course_id" class="sims-select">
+                <option value="">-- Independent CBT Test (No specific package) --</option>
+                {% for c in test_series_courses %}
+                <option value="{{ c.id }}" data-branch="{{ c.branch }}">{{ c.title }} [{{ c.branch }} - ₹{{ c.price }}]</option>
+                {% endfor %}
+              </select>
+              <div style="font-size:11px; color:#64748B; margin-top:4px;">Students must purchase this specific test series to unlock and attempt this examination.</div>
+            </div>
+
+            <div class="sims-form-row">
+              <div class="sims-form-group">
+                <label class="sims-field-label">Publishing Status *</label>
+                <select id="cfg_test_status" class="sims-select">
+                  <option value="PUBLISHED" selected>Published (Visible to eligible students)</option>
+                  <option value="DRAFT">Draft (Hidden / Admin review only)</option>
+                </select>
+              </div>
+
+              <div class="sims-form-group">
+                <label class="sims-field-label">Visibility &amp; Access Control *</label>
+                <select id="cfg_visibility_status" class="sims-select">
+                  <option value="RESTRICTED" selected>🔒 Restricted (Matching Branch + Purchased Series)</option>
+                  <option value="PUBLIC">🌐 Public (All students enrolled in this branch)</option>
+                  <option value="PRIVATE">🕶️ Private / Direct Link Only</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="sims-form-row">
+              <div class="sims-form-group">
+                <label class="sims-field-label">Test Start Date (Unlocks)</label>
+                <input type="datetime-local" id="cfg_start_date" class="sims-input" disabled style="background:#F1F5F9; color:#94A3B8;">
+                <label style="display:flex; align-items:center; gap:8px; margin-top:6px; font-size:12.5px; font-weight:700; color:#059669; cursor:pointer;">
+                  <input type="checkbox" id="cfg_unlock_immediately" checked onchange="toggleImmediateUnlock(this.checked)" style="width:16px; height:16px; accent-color:#059669; cursor:pointer;">
+                  <span>⚡ Available Immediately (No date/time lock for students)</span>
+                </label>
+              </div>
+
+              <div class="sims-form-group">
+                <label class="sims-field-label">Test End Date (Submissions Close)</label>
+                <input type="datetime-local" id="cfg_end_date" class="sims-input">
+                <span style="font-size:11.5px; color:#64748B; margin-top:4px; display:block;">Leave blank for open-ended access.</span>
+              </div>
+            </div>
+
+            <div class="sims-form-row">
+              <div class="sims-form-group">
+                <label class="sims-field-label">Subject</label>
+                <input type="text" id="cfg_subject" class="sims-input" placeholder="e.g. Computer Science / Physics">
+              </div>
+
+              <div class="sims-form-group">
+                <label class="sims-field-label">Topic</label>
+                <input type="text" id="cfg_topic" class="sims-input" placeholder="e.g. Algorithms &amp; Data Structures">
+              </div>
+            </div>
+
+            <div class="sims-form-row">
+              <div class="sims-form-group">
+                <label class="sims-field-label">Duration (Minutes)</label>
+                <input type="number" id="cfg_duration" class="sims-input" value="180">
+              </div>
+
+              <div class="sims-form-group">
+                <label class="sims-field-label">Examination Language</label>
+                <select id="cfg_language" class="sims-select">
+                  <option value="English">English</option>
+                  <option value="Hindi">Hindi (हिंदी)</option>
+                  <option value="Gujarati">Gujarati (ગુજરાતી)</option>
+                  <option value="Bilingual">Bilingual / Mixed</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="sims-form-group">
+              <label class="sims-field-label">Examination Instructions &bull; Section Details</label>
+              <textarea id="cfg_instructions" rows="5" class="sims-textarea"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Marks Calculator Column -->
+        <div class="sims-card">
+          <div class="sims-card-header">
+            <h2 class="sims-card-title">Live Marks Distribution Engine</h2>
+            <p class="sims-card-desc">Intelligent calculation of 1-mark &amp; 2-mark categories.</p>
+          </div>
+
+          <div class="sims-card-body">
+            <div class="sims-calc-card">
+              <div class="sims-calc-row">
+                <span>Distribution Strategy:</span>
+                <select id="calc_pattern_select" onchange="syncPatternAndRecalculate()" class="sims-select-sm">
+                  <option value="balanced">Balanced 50/50 (5×1M + 5×2M)</option>
+                  <option value="all_one_mark">All 1-Mark Questions</option>
+                  <option value="all_two_mark">All 2-Mark Questions</option>
+                  <option value="custom">Custom Allocation</option>
+                </select>
+              </div>
+
+              <div class="sims-metric-strip">
+                <div class="sims-strip-box">
+                  <div class="sims-strip-val" id="calcTotalQuestions">0</div>
+                  <div class="sims-strip-lbl">Total Questions</div>
+                </div>
+                <div class="sims-strip-box">
+                  <div class="sims-strip-val" id="calcOneMarkCount">0</div>
+                  <div class="sims-strip-lbl">1-Mark Qs (Sec A)</div>
+                </div>
+                <div class="sims-strip-box">
+                  <div class="sims-strip-val" id="calcTwoMarkCount">0</div>
+                  <div class="sims-strip-lbl">2-Mark Qs (Sec B)</div>
+                </div>
+                <div class="sims-strip-box gold">
+                  <div class="sims-strip-val" id="calcTotalMarks">0.00</div>
+                  <div class="sims-strip-lbl">Total Marks</div>
+                </div>
+              </div>
+
+              <!-- Visual Proportion Bar -->
+              <div class="sims-proportion-container">
+                <div class="sims-proportion-header">
+                  <span id="propLabel1">Section A (1-Mark): 50%</span>
+                  <span id="propLabel2">Section B (2-Mark): 50%</span>
+                </div>
+                <div class="sims-proportion-bar">
+                  <div id="propBar1" class="sims-prop-seg-1" style="width: 50%;"></div>
+                  <div id="propBar2" class="sims-prop-seg-2" style="width: 50%;"></div>
+                </div>
+              </div>
+
+              <!-- Question Types Breakdown -->
+              <div class="sims-type-breakdown">
+                <div class="sims-type-item">
+                  <span class="sims-badge-sm">MCQ</span>
+                  <span id="calcMCQCount">0 Single Correct</span>
+                </div>
+                <div class="sims-type-item">
+                  <span class="sims-badge-sm msq">MSQ</span>
+                  <span id="calcMSQCount">0 Multi-Select</span>
+                </div>
+                <div class="sims-type-item">
+                  <span class="sims-badge-sm nat">NAT</span>
+                  <span id="calcNATCount">0 Numerical</span>
+                </div>
+              </div>
+
+              <div class="sims-calc-summary" id="calcFormulaSummary">
+                5 Questions × 1 Mark (5 M) + 5 Questions × 2 Marks (10 M) = 15.00 Total Marks
+              </div>
+            </div>
+          </div>
+
+          <div class="sims-card-footer">
+            <button type="button" class="sims-btn sims-btn-secondary" onclick="goToStep(3)">
+              &larr; Back to Questions Review
+            </button>
+            <button type="button" class="sims-btn sims-btn-primary" onclick="goToStep(5)">
+              Proceed to Examination Preview &rarr;
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         STEP 5: PREVIEW & PUBLISH EXAMINATION PAPER
+         ========================================================================= -->
+    <section id="step-pane-5" class="sims-step-pane">
+      <div class="sims-card">
+        <div class="sims-card-header">
+          <div>
+            <h2 class="sims-card-title">Step 5 — Complete Examination Paper Preview</h2>
+            <p class="sims-card-desc">Professional examination-style layout with Section A (1-Mark) and Section B (2-Mark).</p>
+          </div>
+
+          <div class="sims-header-actions">
+            <button type="button" class="sims-btn sims-btn-secondary" onclick="window.print()">
+              🖨️ Print Paper
+            </button>
+            <button type="button" id="publishBtn" class="sims-btn sims-btn-primary" onclick="publishTestToDatabase()">
+              <span>🚀 Publish Test to CBT Catalog &rarr;</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="sims-card-body">
+          <!-- Examination Paper Layout -->
+          <div class="sims-exam-paper" id="examPaperContainer">
+            <!-- Header -->
+            <div class="sims-exam-header">
+              <div class="sims-exam-inst">SIMS GATE EDUCATIONAL PLATFORM &bull; CBT EXAMINATION</div>
+              <h1 id="paperTitle" class="sims-exam-title">TEST PAPER — COMPUTER SCIENCE</h1>
+              
+              <div class="sims-exam-meta-grid">
+                <div><strong>Subject:</strong> <span id="paperSubject">Computer Science</span></div>
+                <div><strong>Topic:</strong> <span id="paperTopic">Comprehensive Syllabus</span></div>
+                <div><strong>Language:</strong> <span id="paperLanguage">English</span></div>
+                <div><strong>Duration:</strong> <span id="paperDuration">180</span> Minutes</div>
+                <div><strong>Total Questions:</strong> <span id="paperTotalQs">10</span></div>
+                <div><strong>Total Marks:</strong> <span id="paperTotalMarks">15</span> Marks</div>
+              </div>
+
+              <div class="sims-exam-instructions">
+                <strong>GENERAL INSTRUCTIONS:</strong>
+                <p id="paperInstructionsText">
+                  1. Total duration of exam is strictly enforced by server timer.<br>
+                  2. Section A contains 1-mark questions with 0.33 negative marking for MCQs.<br>
+                  3. Section B contains 2-mark questions with 0.66 negative marking for MCQs.<br>
+                  4. MSQ and NAT questions have zero negative marking.
+                </p>
+              </div>
+            </div>
+
+            <!-- Section A: 1-Mark Questions -->
+            <div class="sims-exam-section">
+              <div class="sims-section-header">
+                <span id="secATitle">Section A — 1 Mark Questions</span>
+                <span id="secASubtitle" class="sims-sec-badge">5 Questions &bull; 5 Marks &bull; (-0.33 for MCQ)</span>
+              </div>
+              <div id="sectionAQuestionsList" class="sims-questions-list">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+
+            <!-- Section B: 2-Mark Questions -->
+            <div class="sims-exam-section">
+              <div class="sims-section-header">
+                <span id="secBTitle">Section B — 2 Mark Questions</span>
+                <span id="secBSubtitle" class="sims-sec-badge">5 Questions &bull; 10 Marks &bull; (-0.66 for MCQ)</span>
+              </div>
+              <div id="sectionBQuestionsList" class="sims-questions-list">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sims-card-footer">
+          <button type="button" class="sims-btn sims-btn-secondary" onclick="goToStep(4)">
+            &larr; Back to Configuration
+          </button>
+          <button type="button" class="sims-btn sims-btn-primary" onclick="publishTestToDatabase()">
+            <span>🚀 Publish Test to CBT Catalog &rarr;</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- =========================================================================
+     QUESTION EDIT MODAL
+     ========================================================================= -->
+<div id="editQuestionModal" class="sims-modal-backdrop" style="display: none;">
+  <div class="sims-modal">
+    <div class="sims-modal-header">
+      <h3 id="modalTitle">Edit Question #1</h3>
+      <button type="button" class="sims-modal-close" onclick="closeEditModal()">✕</button>
+    </div>
+
+    <div class="sims-modal-body">
+      <input type="hidden" id="editModalQIndex" value="-1">
+
+      <div class="sims-form-group">
+        <label class="sims-field-label">Question Text (Preserves original language &amp; math) *</label>
+        <textarea id="modalQText" rows="4" class="sims-textarea"></textarea>
+      </div>
+
+      <div class="sims-form-row">
+        <div class="sims-form-group">
+          <label class="sims-field-label">Question Type</label>
+          <select id="modalQType" class="sims-select" onchange="onModalTypeChange()">
+            <option value="MCQ">MCQ — Single Correct</option>
+            <option value="MSQ">MSQ — Multiple Select</option>
+            <option value="NAT">NAT — Numerical Answer</option>
+            <option value="TF">True / False</option>
+          </select>
+        </div>
+
+        <div class="sims-form-group">
+          <label class="sims-field-label">Marks</label>
+          <select id="modalQMarks" class="sims-select" onchange="onModalMarksChange()">
+            <option value="1.0">1.0 Mark (Section A)</option>
+            <option value="2.0">2.0 Marks (Section B)</option>
+            <option value="0.5">0.5 Mark</option>
+            <option value="3.0">3.0 Marks</option>
+          </select>
+        </div>
+
+        <div class="sims-form-group">
+          <label class="sims-field-label">Negative Marks</label>
+          <input type="number" step="0.01" id="modalQNegMarks" class="sims-input" value="0.33">
+        </div>
+      </div>
+
+      <!-- Options -->
+      <div id="modalOptionsGroup">
+        <div class="sims-form-group">
+          <label class="sims-field-label">Option A (क / 1)</label>
+          <input type="text" id="modalOptA" class="sims-input">
+        </div>
+        <div class="sims-form-group">
+          <label class="sims-field-label">Option B (ख / 2)</label>
+          <input type="text" id="modalOptB" class="sims-input">
+        </div>
+        <div class="sims-form-group">
+          <label class="sims-field-label">Option C (ग / 3)</label>
+          <input type="text" id="modalOptC" class="sims-input">
+        </div>
+        <div class="sims-form-group">
+          <label class="sims-field-label">Option D (घ / 4)</label>
+          <input type="text" id="modalOptD" class="sims-input">
+        </div>
+      </div>
+
+      <!-- Correct Answer Selection -->
+      <div class="sims-form-group">
+        <label class="sims-field-label">Correct Answer Key (e.g. 'A' for MCQ, or 'A, C' for MSQ) *</label>
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <input type="text" id="modalAnsKey" class="sims-input" style="max-width: 200px;" placeholder="e.g. A or A, B">
+          <div class="sims-msq-checkboxes">
+            <label><input type="checkbox" id="chkAnsA" onchange="syncCheckboxToKey()"> A</label>
+            <label><input type="checkbox" id="chkAnsB" onchange="syncCheckboxToKey()"> B</label>
+            <label><input type="checkbox" id="chkAnsC" onchange="syncCheckboxToKey()"> C</label>
+            <label><input type="checkbox" id="chkAnsD" onchange="syncCheckboxToKey()"> D</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="sims-form-group">
+        <label class="sims-field-label">Explanation / Solution Steps</label>
+        <textarea id="modalQExpl" rows="3" class="sims-textarea"></textarea>
+      </div>
+
+      <div class="sims-form-group">
+        <label class="sims-field-label">Diagram Image / Figure</label>
+        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+          <input type="text" id="modalQDiagram" class="sims-input" placeholder="e.g. /media/questions/diagrams/figure1.webp" style="flex: 1;">
+          <button type="button" class="sims-btn sims-btn-sm" onclick="triggerManualDiagramUpload()" style="white-space: nowrap;">Replace</button>
+          <button type="button" class="sims-btn sims-btn-sm sims-btn-danger" onclick="removeModalDiagram()" style="white-space: nowrap;">Remove</button>
+          <input type="file" id="manualCropFileInput" accept="image/*" style="display: none;" onchange="handleManualCropFile(this)">
+        </div>
+        <div id="modalDiagramPreviewBox" style="text-align: center; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 10px; display: none;">
+          <img id="modalDiagramImg" src="" alt="Diagram Preview" style="max-height: 180px; max-width: 100%; object-fit: contain;">
+        </div>
+      </div>
+    </div>
+
+    <div class="sims-modal-footer">
+      <button type="button" class="sims-btn sims-btn-secondary" onclick="closeEditModal()">Cancel</button>
+      <button type="button" class="sims-btn sims-btn-primary" onclick="saveEditModalChanges()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- =========================================================================
+     STYLES: INSTITUTIONAL SAAS DASHBOARD (RESTRAINED, ELEGANT, USABLE)
+     ========================================================================= -->
+<style>
+/* Reset & Shell */
+.sims-saas-layout {
+  display: flex;
+  min-height: calc(100vh - 80px);
+  background: #F8FAFC;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #0F172A;
+}
+
+/* Sidebar */
+.sims-saas-sidebar {
+  width: 250px;
+  background: #FFFFFF;
+  border-right: 1px solid #E2E8F0;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 16px;
+  flex-shrink: 0;
+}
+.sims-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #F1F5F9;
+  margin-bottom: 16px;
+}
+.sims-brand-crest {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: #15271E;
+  color: #D4AF37;
+  font-weight: 800;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #D4AF37;
+}
+.sims-brand-title {
+  display: block;
+  font-size: 15px;
+  font-weight: 800;
+  color: #0F172A;
+  line-height: 1.2;
+}
+.sims-brand-sub {
+  font-size: 11px;
+  color: #64748B;
+  font-weight: 500;
+}
+.sims-sidebar-section-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94A3B8;
+  margin: 16px 8px 6px;
+}
+.sims-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sims-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+.sims-nav-item:hover {
+  background: #F1F5F9;
+  color: #15271E;
+}
+.sims-nav-item.active {
+  background: #15271E;
+  color: #FFFFFF;
+}
+.sims-nav-item.active .sims-nav-tag {
+  background: #D4AF37;
+  color: #0D1C15;
+}
+.sims-nav-icon {
+  font-size: 15px;
+}
+.sims-nav-tag {
+  margin-left: auto;
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #E2E8F0;
+  color: #334155;
+  text-transform: uppercase;
+}
+.sims-sidebar-widget {
+  margin-top: auto;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 12px;
+}
+.sims-widget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-weight: 700;
+  color: #475569;
+}
+.sims-widget-body {
+  font-weight: 700;
+  color: #0F172A;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sims-widget-footer {
+  color: #64748B;
+  font-size: 11px;
+}
+
+/* Main Workspace */
+.sims-saas-main {
+  flex: 1;
+  padding: 24px 32px;
+  max-width: 1380px;
+  overflow-y: auto;
+}
+.sims-workspace-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  gap: 20px;
+}
+.sims-header-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #F1F5F9;
+  border: 1px solid #CBD5E1;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #15271E;
+  margin-bottom: 8px;
+}
+.sims-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #059669;
+}
+.sims-workspace-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0 0 6px;
+  letter-spacing: -0.02em;
+}
+.sims-workspace-subtitle {
+  font-size: 13px;
+  color: #64748B;
+  margin: 0;
+  max-width: 800px;
+  line-height: 1.5;
+}
+.sims-header-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Target Bar */
+.sims-target-bar {
+  display: flex;
+  gap: 16px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+}
+.sims-target-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sims-target-item label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #475569;
+}
+
+/* Stepper */
+.sims-stepper-bar {
+  display: flex;
+  align-items: center;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 12px 18px;
+  margin-bottom: 24px;
+}
+.sims-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 7px;
+  transition: all 0.15s;
+}
+.sims-step.active {
+  background: #F1F5F9;
+}
+.sims-step.completed .sims-step-num {
+  background: #059669;
+  color: #FFF;
+}
+.sims-step.active .sims-step-num {
+  background: #15271E;
+  color: #D4AF37;
+  border: 1.5px solid #D4AF37;
+}
+.sims-step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #E2E8F0;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+}
+.sims-step-text {
+  display: flex;
+  flex-direction: column;
+}
+.sims-step-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #94A3B8;
+}
+.sims-step-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #0F172A;
+}
+.sims-step-connector {
+  flex: 1;
+  height: 2px;
+  background: #E2E8F0;
+  margin: 0 10px;
+}
+
+/* Step Panes */
+.sims-step-pane {
+  display: none;
+}
+.sims-step-pane.active {
+  display: block;
+}
+
+/* Cards */
+.sims-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+.sims-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px;
+  border-bottom: 1px solid #F1F5F9;
+}
+.sims-card-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0 0 3px;
+}
+.sims-card-desc {
+  font-size: 12.5px;
+  color: #64748B;
+  margin: 0;
+}
+.sims-card-body {
+  padding: 24px;
+}
+.sims-card-body.p-0 {
+  padding: 0;
+}
+.sims-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-top: 1px solid #F1F5F9;
+  background: #FAFBFD;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+/* Dropzone */
+.sims-dropzone {
+  border: 2px dashed #CBD5E1;
+  border-radius: 12px;
+  padding: 44px 24px;
+  text-align: center;
+  background: #F8FAFC;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.sims-dropzone:hover, .sims-dropzone.dragover {
+  border-color: #15271E;
+  background: #F1F5F9;
+}
+.sims-dropzone-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+.sims-dropzone-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0F172A;
+  margin: 0 0 6px;
+}
+.sims-dropzone-desc {
+  font-size: 12.5px;
+  color: #64748B;
+  margin: 0 0 16px;
+}
+.sims-format-pills {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.sims-format-pill {
+  font-size: 11px;
+  font-weight: 600;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  color: #475569;
+}
+
+/* Selected File Card */
+.sims-file-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #F1F5F9;
+  border: 1px solid #CBD5E1;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-top: 16px;
+}
+.sims-file-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sims-file-icon {
+  font-size: 24px;
+}
+.sims-file-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0F172A;
+}
+.sims-file-size {
+  font-size: 11.5px;
+  color: #64748B;
+}
+
+/* Progress & Checklist */
+.sims-progress-container {
+  margin-bottom: 28px;
+}
+.sims-progress-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0F172A;
+  margin-bottom: 8px;
+}
+.sims-progress-track {
+  height: 8px;
+  background: #E2E8F0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.sims-progress-fill {
+  height: 100%;
+  background: #15271E;
+  transition: width 0.3s ease;
+}
+.sims-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sims-check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+}
+.sims-check-item.done {
+  background: #F0FDF4;
+  border-color: #BBF7D0;
+}
+.sims-check-icon {
+  font-size: 16px;
+  margin-top: 2px;
+}
+.sims-check-info strong {
+  display: block;
+  font-size: 13px;
+  color: #0F172A;
+  margin-bottom: 2px;
+}
+.sims-check-info p {
+  font-size: 12px;
+  color: #64748B;
+  margin: 0;
+}
+
+/* KPI Banner */
+.sims-review-kpi-bar {
+  display: flex;
+  background: #F8FAFC;
+  border-bottom: 1px solid #E2E8F0;
+  padding: 16px 24px;
+  gap: 24px;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+.sims-kpi-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.sims-kpi-lbl {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #64748B;
+}
+.sims-kpi-val {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0F172A;
+}
+.sims-kpi-val.highlight {
+  color: #059669;
+}
+.sims-kpi-val.gold {
+  color: #B45309;
+}
+
+/* Table */
+.sims-table-responsive {
+  max-height: 520px;
+  overflow: auto;
+}
+.sims-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.sims-table th {
+  background: #F8FAFC;
+  padding: 10px 14px;
+  font-weight: 700;
+  color: #475569;
+  text-align: left;
+  border-bottom: 1px solid #E2E8F0;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.sims-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #F1F5F9;
+  vertical-align: middle;
+}
+.sims-table tr:hover td {
+  background: #FCFDFE;
+}
+
+/* Badges & Pills */
+.sims-badge-sm {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: #E2E8F0;
+  color: #334155;
+}
+.sims-badge-sm.msq {
+  background: #DBEAFE;
+  color: #1E40AF;
+}
+.sims-badge-sm.nat {
+  background: #FEF3C7;
+  color: #92400E;
+}
+.sims-badge-success {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: #DCFCE7;
+  color: #166534;
+}
+.sims-badge-warning {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: #FEF08A;
+  color: #854D0E;
+}
+
+/* Buttons & Inputs */
+.sims-btn {
+  padding: 8px 16px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+.sims-btn-primary {
+  background: #15271E;
+  color: #FFFFFF;
+}
+.sims-btn-primary:hover {
+  background: #1F382B;
+}
+.sims-btn-secondary {
+  background: #FFFFFF;
+  border-color: #CBD5E1;
+  color: #334155;
+}
+.sims-btn-secondary:hover {
+  background: #F1F5F9;
+}
+.sims-btn-outline {
+  background: transparent;
+  border-color: #CBD5E1;
+  color: #15271E;
+}
+.sims-btn-outline:hover {
+  background: #F1F5F9;
+}
+.sims-btn-sm {
+  padding: 5px 10px;
+  font-size: 11.5px;
+  background: #F8FAFC;
+  border-color: #CBD5E1;
+  color: #334155;
+}
+.sims-btn-danger {
+  color: #DC2626;
+  border-color: #FCA5A5;
+}
+.sims-btn-icon-danger {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid #CBD5E1;
+  background: #FFF;
+  color: #64748B;
+  cursor: pointer;
+  font-size: 12px;
+}
+.sims-btn-icon-danger:hover {
+  color: #DC2626;
+  border-color: #DC2626;
+}
+
+.sims-select, .sims-input, .sims-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #CBD5E1;
+  border-radius: 7px;
+  font-size: 13px;
+  color: #0F172A;
+  background: #FFFFFF;
+}
+.sims-select-sm {
+  padding: 4px 8px;
+  border: 1px solid #CBD5E1;
+  border-radius: 6px;
+  font-size: 12px;
+}
+.sims-field-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 5px;
+}
+.sims-form-group {
+  margin-bottom: 14px;
+}
+.sims-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.sims-grid-2col {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 20px;
+}
+
+/* Calculator Card */
+.sims-calc-card {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 18px;
+}
+.sims-calc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 14px;
+}
+.sims-metric-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.sims-strip-box {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+}
+.sims-strip-box.gold {
+  border-color: #D4AF37;
+  background: #FFFDF9;
+}
+.sims-strip-val {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0F172A;
+}
+.sims-strip-lbl {
+  font-size: 10.5px;
+  color: #64748B;
+  font-weight: 600;
+}
+.sims-proportion-container {
+  margin-bottom: 16px;
+}
+.sims-proportion-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748B;
+  margin-bottom: 4px;
+}
+.sims-proportion-bar {
+  display: flex;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #E2E8F0;
+}
+.sims-prop-seg-1 {
+  background: #059669;
+}
+.sims-prop-seg-2 {
+  background: #D97706;
+}
+.sims-type-breakdown {
+  display: flex;
+  gap: 14px;
+  font-size: 11.5px;
+  color: #475569;
+  margin-bottom: 14px;
+}
+.sims-type-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sims-calc-summary {
+  font-size: 12px;
+  font-weight: 700;
+  color: #15271E;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 6px;
+  padding: 10px 12px;
+  text-align: center;
+}
+
+/* Examination Layout */
+.sims-exam-paper {
+  background: #FFFFFF;
+  border: 1.5px solid #CBD5E1;
+  border-radius: 8px;
+  padding: 32px 36px;
+}
+.sims-exam-inst {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: #64748B;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+.sims-exam-title {
+  text-align: center;
+  font-size: 20px;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0 0 16px;
+}
+.sims-exam-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px 16px;
+  font-size: 12px;
+  color: #334155;
+  padding: 12px 16px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+.sims-exam-instructions {
+  font-size: 11.5px;
+  color: #475569;
+  background: #FFFDF7;
+  border: 1px solid #E8D5A0;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+.sims-exam-section {
+  margin-bottom: 28px;
+}
+.sims-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #0F172A;
+  font-size: 15px;
+  font-weight: 800;
+  color: #0F172A;
+  margin-bottom: 16px;
+}
+.sims-sec-badge {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #64748B;
+}
+.sims-exam-q {
+  padding: 12px 0;
+  border-bottom: 1px dashed #E2E8F0;
+}
+.sims-exam-q-text {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #0F172A;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+.sims-exam-options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 14px;
+  font-size: 12.5px;
+  color: #334155;
+  margin-bottom: 6px;
+}
+.sims-exam-q-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #059669;
+  font-weight: 700;
+}
+
+/* Modal */
+.sims-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+}
+.sims-modal {
+  background: #FFFFFF;
+  border-radius: 12px;
+  max-width: 680px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
+}
+.sims-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #F1F5F9;
+}
+.sims-modal-header h3 {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0;
+}
+.sims-modal-close {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: #94A3B8;
+}
+.sims-modal-body {
+  padding: 20px;
+  overflow-y: auto;
+}
+.sims-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid #F1F5F9;
+  background: #FAFBFD;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+.sims-msq-checkboxes {
+  display: flex;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+}
+
+/* Modern Segmented Tabs */
+.sims-tab-group {
+  display: inline-flex;
+  background: #F1F5F9;
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid #E2E8F0;
+  gap: 4px;
+}
+.sims-tab-btn {
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748B;
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.sims-tab-btn.active {
+  background: #FFFFFF;
+  color: #0F172A;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+.sims-tab-btn:hover:not(.active) {
+  color: #0F172A;
+  background: rgba(255, 255, 255, 0.6);
+}
+</style>
+
+<!-- =========================================================================
+     JAVASCRIPT: REACTIVE CLIENT STATE & API INTEGRATION
+     ========================================================================= -->
+<script>
+// Global Client State
+let currentStep = 1;
+let selectedFile = null;
+let currentJobId = null;
+let questionsData = [];
+let paperPreviewData = null;
+let detectedLanguage = "English";
+let currentBranch = "CSE";
+let currentPattern = "balanced";
+
+const seriesListJson = {{ series_list_json|safe }};
+const preselectedSeriesId = "{{ preselected_series_id|default:'' }}";
+const preselectedTestId = "{{ preselected_test_id|default:'' }}";
+const testsJson = {{ tests_json|safe }};
+const sampleHindiPdfUrl = "{{ sample_hindi_pdf_url }}";
+const sampleEnglishPdfUrl = "{{ sample_english_pdf_url }}";
+
+function getCsrfToken() {
+  const input = document.querySelector('[name=csrfmiddlewaretoken]');
+  if (input && input.value) return input.value;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, 10) === 'csrftoken=') {
+        return decodeURIComponent(cookie.substring(10));
+      }
+    }
+  }
+  return '';
+}
+
+// 1. Navigation & Stepper Control
+function goToStep(step) {
+  if (step > 1 && questionsData.length === 0 && step !== 2) {
+    alert("Please upload or extract questions first in Step 1.");
+    return;
+  }
+  currentStep = step;
+  document.querySelectorAll('.sims-step').forEach((el, idx) => {
+    el.classList.toggle('active', idx + 1 === step);
+    if (idx + 1 < step) el.classList.add('completed');
+  });
+  document.querySelectorAll('.sims-step-pane').forEach((el, idx) => {
+    el.classList.toggle('active', idx + 1 === step);
+  });
+
+  if (step === 4) {
+    updateTestConfigFromState();
+    updateLiveMarksCalculation();
+  } else if (step === 5) {
+    renderPaperPreview();
+  }
+}
+
+// 2. Upload Tab Switching
+function switchUploadTab(mode) {
+  document.getElementById('tabUploadBtn').classList.toggle('active', mode === 'file');
+  document.getElementById('tabPasteBtn').classList.toggle('active', mode === 'paste');
+  document.getElementById('tab-pane-file').style.display = (mode === 'file') ? 'block' : 'none';
+  document.getElementById('tab-pane-paste').style.display = (mode === 'paste') ? 'block' : 'none';
+}
+
+// Toast Notification System (Immune to browser alert blockers)
+function showToast(message, type = 'info') {
+  const toast = document.getElementById('simsGlobalToast');
+  if (!toast) {
+    console.log(`[Toast ${type}]: ${message}`);
+    return;
+  }
+  toast.style.display = 'block';
+  if (type === 'error') {
+    toast.style.background = '#7F1D1D';
+    toast.style.border = '1.5px solid #EF4444';
+    toast.style.color = '#FEE2E2';
+    toast.innerHTML = `❌ <strong>Error:</strong> ${message}`;
+  } else if (type === 'success') {
+    toast.style.background = '#064E3B';
+    toast.style.border = '1.5px solid #10B981';
+    toast.style.color = '#D1FAE5';
+    toast.innerHTML = `✅ <strong>Success:</strong> ${message}`;
+  } else if (type === 'warning') {
+    toast.style.background = '#78350F';
+    toast.style.border = '1.5px solid #F59E0B';
+    toast.style.color = '#FEF3C7';
+    toast.innerHTML = `⚠️ <strong>Notice:</strong> ${message}`;
+  } else {
+    toast.style.background = '#1E293B';
+    toast.style.border = '1.5px solid #64748B';
+    toast.style.color = '#F1F5F9';
+    toast.innerHTML = `ℹ️ ${message}`;
+  }
+  clearTimeout(window._toastTimeout);
+  window._toastTimeout = setTimeout(() => {
+    toast.style.display = 'none';
+  }, 6000);
+}
+
+// Dedicated File Picker Trigger (Works reliably across all browsers)
+function triggerBrowseFile(event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  const fileInput = document.getElementById('fileInput');
+  if (fileInput) {
+    fileInput.value = '';
+    fileInput.click();
+  }
+}
+
+// 3. File Drag & Drop Handling
+const dropZone = document.getElementById('dropZone');
+if (dropZone) {
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
+  });
+  ['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+  });
+  ['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+  });
+  dropZone.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    if (dt && dt.files && dt.files[0]) {
+      handleFileSelect(dt.files[0]);
+    }
+  });
+}
+
+function handleFileSelect(file) {
+  if (!file) {
+    console.warn("No file provided to handleFileSelect");
+    return;
+  }
+  selectedFile = file;
+  console.log("File selected:", file.name, file.size);
+  const fileNameEl = document.getElementById('fileName');
+  const fileSizeEl = document.getElementById('fileSize');
+  const fileCardEl = document.getElementById('selectedFileCard');
+  if (fileNameEl) fileNameEl.textContent = file.name;
+  if (fileSizeEl) fileSizeEl.textContent = `${(file.size / 1024).toFixed(1)} KB • Ingesting & Extracting questions...`;
+  if (fileCardEl) fileCardEl.style.display = 'flex';
+  if (dropZone) dropZone.style.display = 'none';
+  showToast(`File "${file.name}" selected! Starting extraction pipeline...`, 'success');
+
+  // Automatically start extraction without requiring an extra click
+  setTimeout(() => {
+    startIntelligentExtraction();
+  }, 350);
+}
+
+function clearSelectedFile() {
+  selectedFile = null;
+  const fileInput = document.getElementById('fileInput');
+  const fileCardEl = document.getElementById('selectedFileCard');
+  if (fileInput) fileInput.value = '';
+  if (fileCardEl) fileCardEl.style.display = 'none';
+  if (dropZone) dropZone.style.display = 'block';
+  showToast("File selection cleared.", "info");
+}
+
+// 4. One-Click Sample Paper Loaders
+async function loadSamplePaper(type) {
+  const sampleUrl = type === 'hindi' ? sampleHindiPdfUrl : sampleEnglishPdfUrl;
+  showToast(`Loading sample ${type === 'hindi' ? 'Hindi' : 'English'} examination paper...`, 'info');
+  try {
+    const res = await fetch(sampleUrl);
+    if (!res.ok) {
+      throw new Error(`Sample file not found (HTTP ${res.status}) at ${sampleUrl}`);
+    }
+    const blob = await res.blob();
+    const file = new File([blob], type === 'hindi' ? 'hindi_physics_10q.pdf' : 'english_cs_10q.pdf', { type: 'application/pdf' });
+    handleFileSelect(file);
+    switchUploadTab('file');
+    // Set matching metadata
+    if (type === 'hindi') {
+      const titleEl = document.getElementById('cfg_title');
+      if (titleEl) titleEl.value = "भौतिक विज्ञान अभ्यास प्रश्न पत्र (10 प्रश्न)";
+      const subjEl = document.getElementById('cfg_subject');
+      if (subjEl) subjEl.value = "भौतिक विज्ञान (Physics)";
+      const topicEl = document.getElementById('cfg_topic');
+      if (topicEl) topicEl.value = "यांत्रिकी एवं ऊष्मागतिकी";
+      const langEl = document.getElementById('cfg_language');
+      if (langEl) langEl.value = "Hindi";
+    } else {
+      const titleEl = document.getElementById('cfg_title');
+      if (titleEl) titleEl.value = "Computer Science & Engineering — GATE Mock Test";
+      const subjEl = document.getElementById('cfg_subject');
+      if (subjEl) subjEl.value = "Computer Science & Engineering";
+      const topicEl = document.getElementById('cfg_topic');
+      if (topicEl) topicEl.value = "Algorithms, Systems & Architecture";
+      const langEl = document.getElementById('cfg_language');
+      if (langEl) langEl.value = "English";
+    }
+    // Automatically trigger extraction for instant preview
+    startIntelligentExtraction();
+  } catch (err) {
+    showToast("Could not load sample paper: " + err.message, "error");
+  }
+}
+
+// 5. Intelligent Extraction API Call
+async function startIntelligentExtraction() {
+  const rawText = document.getElementById('rawTextarea') ? document.getElementById('rawTextarea').value.trim() : "";
+  if (!selectedFile && !rawText) {
+    showToast("Please choose an examination PDF file first by clicking 'Browse File' or select a 1-Click Sample Paper.", "warning");
+    triggerBrowseFile();
+    return;
+  }
+
+  goToStep(2);
+  const progressBar = document.getElementById('processingProgressBar');
+  const stageText = document.getElementById('processingStageText');
+  const percentText = document.getElementById('processingPercentText');
+  const statusBadge = document.getElementById('processingStatusBadge');
+
+  if (statusBadge) {
+    statusBadge.textContent = 'Processing';
+    statusBadge.className = 'sims-status-badge in-progress';
+  }
+
+  // Stage simulation helper while request is processing
+  if (progressBar) progressBar.style.width = '20%';
+  if (percentText) percentText.textContent = '20%';
+  if (stageText) stageText.textContent = 'Stage 1/5: Extracting text & diagram streams from document...';
+  const stage1El = document.getElementById('check-stage-1');
+  if (stage1El) stage1El.classList.add('done');
+
+  const formData = new FormData();
+  if (selectedFile) formData.append('file', selectedFile);
+  if (rawText) formData.append('raw_text', rawText);
+
+  const branchEl = document.getElementById('target_branch');
+  const testIdEl = document.getElementById('target_test_id');
+  const patternEl = document.getElementById('target_pattern');
+  const branch = branchEl ? branchEl.value : 'CSE';
+  const testId = testIdEl ? testIdEl.value : '__NEW__';
+  const pattern = patternEl ? patternEl.value : 'balanced';
+
+  formData.append('branch', branch === 'ALL' ? 'CSE' : branch);
+  formData.append('pattern', pattern);
+  if (testId && testId !== '__NEW__') formData.append('test_id', testId);
+
+  // Progressive updates
+  setTimeout(() => {
+    if (progressBar) progressBar.style.width = '45%';
+    if (percentText) percentText.textContent = '45%';
+    if (stageText) stageText.textContent = 'Stage 2/5: Detecting document & question language fidelity...';
+    const stage2El = document.getElementById('check-stage-2');
+    if (stage2El) stage2El.classList.add('done');
+  }, 400);
+
+  setTimeout(() => {
+    if (progressBar) progressBar.style.width = '70%';
+    if (percentText) percentText.textContent = '70%';
+    if (stageText) stageText.textContent = 'Stage 3/5: Classifying MCQ / MSQ types & computing complexity...';
+    const stage3El = document.getElementById('check-stage-3');
+    if (stage3El) stage3El.classList.add('done');
+  }, 900);
+
+  try {
+    const csrf = getCsrfToken();
+    const reqHeaders = {};
+    if (csrf) reqHeaders['X-CSRFToken'] = csrf;
+
+    const response = await fetch('/api/courses/test-series/intelligent-generator/upload-pdf/', {
+      method: 'POST',
+      headers: reqHeaders,
+      body: formData
+    });
+
+    let data = {};
+    try {
+      data = await response.json();
+    } catch (e) {
+      const text = await response.text();
+      throw new Error(`Server returned status ${response.status}: ${text.substring(0, 150)}`);
+    }
+
+    if (!response.ok || !data.success) {
+      if (statusBadge) {
+        statusBadge.textContent = 'Failed';
+        statusBadge.classList.replace('in-progress', 'sims-btn-danger');
+      }
+      const errorMsg = data.error || data.detail || (data.errors ? data.errors.join("\n") : `Extraction failed (HTTP ${response.status})`);
+      if (stageText) stageText.textContent = 'Extraction failed: ' + errorMsg;
+      showToast('Extraction Error: ' + errorMsg, 'error');
+      goToStep(1);
+      return;
+    }
+
+    if (progressBar) progressBar.style.width = '90%';
+    if (percentText) percentText.textContent = '90%';
+    if (stageText) stageText.textContent = 'Stage 4/5: Allocating 1-mark & 2-mark distributions...';
+    const stage4El = document.getElementById('check-stage-4');
+    if (stage4El) stage4El.classList.add('done');
+
+    setTimeout(() => {
+      if (progressBar) progressBar.style.width = '100%';
+      if (percentText) percentText.textContent = '100%';
+      if (stageText) stageText.textContent = 'Stage 5/5: Verification & validation checks passed!';
+      const stage5El = document.getElementById('check-stage-5');
+      if (stage5El) stage5El.classList.add('done');
+      if (statusBadge) {
+        statusBadge.textContent = 'Complete';
+        statusBadge.classList.replace('in-progress', 'sims-badge-success');
+      }
+
+      // Populate State
+      currentJobId = data.job_id;
+      questionsData = data.questions || [];
+      detectedLanguage = data.detected_language || "English";
+      paperPreviewData = data.paper_preview;
+
+      // Layout Overlap Alert Banner
+      const bEl = document.getElementById('batchLayoutBanner');
+      const bTxt = document.getElementById('batchLayoutBannerText');
+      if (bEl && bTxt) {
+        if (data.batch_has_overlap || data.batch_banner) {
+          bTxt.textContent = data.batch_banner || "Layout problem in source PDF: diagram overlaps options on pages 2, 3. Text was read correctly from the PDF; please check the diagram images.";
+          bEl.style.display = 'block';
+        } else {
+          bEl.style.display = 'none';
+        }
+      }
+
+      // Model Attribution Banner
+      const mEl = document.getElementById('importModelBanner');
+      const mTxt = document.getElementById('modelUsedName');
+      if (mEl && mTxt) {
+        mTxt.textContent = `Model used: ${data.model_used || 'PyMuPDF Vector Engine & Tesseract v5'} | Source: real extraction`;
+        mEl.style.display = 'block';
+      }
+
+      renderQuestionsReviewTable();
+      updateTestConfigFromState();
+      updateLiveMarksCalculation();
+
+      setTimeout(() => {
+        goToStep(3);
+      }, 700);
+    }, 400);
+
+  } catch (err) {
+    stageText.textContent = 'Network or API error: ' + err.message;
+    alert('Extraction Error: ' + err.message);
+    goToStep(1);
+  }
+}
+
+// Filter & Navigation State for Step 3 Review
+let reviewCurrentFilter = 'all';
+let activeQuestionIndex = 0;
+let hasUnsavedChanges = false;
+let autosaveTimer = null;
+
+window.addEventListener('beforeunload', function(e) {
+  if (hasUnsavedChanges) {
+    e.preventDefault();
+    e.returnValue = 'You have unsaved changes in your test questions draft.';
+    return e.returnValue;
+  }
+});
+
+function markChangesDirty() {
+  hasUnsavedChanges = true;
+  const indicator = document.getElementById('autosaveIndicator');
+  if (indicator) {
+    indicator.textContent = '● Unsaved changes';
+    indicator.style.color = '#F59E0B';
+  }
+}
+
+function debouncedAutosave(idx) {
+  markChangesDirty();
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(`sims_bulk_draft_${currentJobId || 'default'}`, JSON.stringify(questionsData));
+    } catch(e) {}
+    hasUnsavedChanges = false;
+    const indicator = document.getElementById('autosaveIndicator');
+    if (indicator) {
+      indicator.textContent = '✓ All drafts saved';
+      indicator.style.color = '#34D399';
+    }
+    const tag = document.getElementById(`saved-tag-${idx}`);
+    if (tag) {
+      tag.style.display = 'inline';
+      setTimeout(() => { tag.style.display = 'none'; }, 2000);
+    }
+  }, 800);
+}
+
+function setReviewFilter(filterName) {
+  reviewCurrentFilter = filterName;
+  document.querySelectorAll('#reviewFilterChips button').forEach(b => {
+    b.style.background = '#F8FAFC';
+    b.style.color = '#475569';
+    b.style.borderColor = '#CBD5E1';
+    b.style.fontWeight = '600';
+  });
+  const activeBtn = document.getElementById(`chip-${filterName}`);
+  if (activeBtn) {
+    activeBtn.style.background = '#0F4336';
+    activeBtn.style.color = '#FFFFFF';
+    activeBtn.style.borderColor = '#0F4336';
+    activeBtn.style.fontWeight = '700';
+  }
+  renderQuestionsReviewTable();
+}
+
+// 6. Question Review Table Rendering
+function renderQuestionsReviewTable() {
+  const tbody = document.getElementById('questionsTableBody');
+  tbody.innerHTML = '';
+
+  let oneCount = 0;
+  let twoCount = 0;
+  let totalMarks = 0;
+  let approvedCount = 0;
+
+  let filterCounts = {
+    all: questionsData.length,
+    needs_review: 0,
+    approved: 0,
+    overlap: 0,
+    missing_answer: 0
+  };
+
+  questionsData.forEach((q, idx) => {
+    const m = parseFloat(q.marks || 1.0);
+    totalMarks += m;
+    if (m === 1.0) oneCount++;
+    else if (m === 2.0) twoCount++;
+
+    const isOverlap = Boolean(q.overlap || q.overlap_flagged);
+    const isMissingAns = !q.correct_answer || q.correct_answer.trim() === '';
+    const isNeedsRev = isOverlap || isMissingAns || !q.is_valid || q.is_flagged_for_review;
+    const isApproved = Boolean(q.is_approved);
+
+    if (isApproved) approvedCount++;
+    if (isNeedsRev) filterCounts.needs_review++;
+    if (isApproved) filterCounts.approved++;
+    if (isOverlap) filterCounts.overlap++;
+    if (isMissingAns) filterCounts.missing_answer++;
+
+    // Apply Filter
+    if (reviewCurrentFilter === 'needs_review' && !isNeedsRev) return;
+    if (reviewCurrentFilter === 'approved' && !isApproved) return;
+    if (reviewCurrentFilter === 'overlap' && !isOverlap) return;
+    if (reviewCurrentFilter === 'missing_answer' && !isMissingAns) return;
+
+    const tr = document.createElement('tr');
+    tr.id = `q-row-${idx}`;
+    if (idx === activeQuestionIndex) {
+      tr.style.background = '#F0FDF4';
+      tr.style.borderLeft = '4px solid #059669';
+    }
+
+    tr.onclick = (e) => {
+      if (['INPUT', 'SELECT', 'BUTTON', 'A'].includes(e.target.tagName)) return;
+      activeQuestionIndex = idx;
+      renderQuestionsReviewTable();
+    };
+
+    const typeBadge = q.question_type === 'MSQ' ? '<span class="sims-badge-sm msq">MSQ</span>' :
+                      q.question_type === 'NAT' ? '<span class="sims-badge-sm nat">NAT</span>' :
+                      '<span class="sims-badge-sm">MCQ</span>';
+
+    const statusBadge = isApproved ?
+      '<span class="sims-badge-success" style="cursor:pointer;" onclick="toggleApproveQuestion(' + idx + ')">✓ Approved</span>' :
+      (isNeedsRev ?
+        `<span class="sims-badge-warning" style="cursor:pointer;" onclick="toggleApproveQuestion(${idx})" title="${escapeHtml(q.validation_notes || '')}">⚠️ Needs Review</span>` :
+        `<span class="sims-badge-sm" style="cursor:pointer;" onclick="toggleApproveQuestion(${idx})">Draft</span>`);
+
+    const amberBadge = isOverlap ?
+      `<div style="margin-top: 4px;"><span class="badge-amber" style="background:#FEF3C7; color:#92400E; border:1px solid #F59E0B; padding:2px 6px; border-radius:4px; font-size:10.5px; font-weight:700;">⚠️ Diagram overlaps text in source PDF, check visually</span></div>` : '';
+
+    const optsPreview = `A: ${(q.option_a || '—').substring(0, 16)} | B: ${(q.option_b || '—').substring(0, 16)}`;
+
+    tr.innerHTML = `
+      <td style="font-weight: 800; color: #475569;">${q.question_number || (idx + 1)}</td>
+      <td>
+        <div style="font-weight: 600; color: #0F172A; max-width: 310px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+          ${escapeHtml(q.question_text || '')}
+        </div>
+        ${amberBadge}
+        ${q.diagram_url ? `
+          <div style="margin-top: 5px; display: inline-flex; align-items: center; gap: 8px; background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 6px; padding: 2px 8px;">
+            <img src="${q.diagram_url}" alt="Diagram" style="height: 28px; max-width: 55px; object-fit: contain; border-radius: 3px; background: #FFF; cursor: pointer;" onclick="window.open('${q.diagram_url}', '_blank')" title="Click to inspect diagram">
+            <span style="font-size: 11px; font-weight: 700; color: #065F46;">🔬 Figure Clean Clip</span>
+          </div>
+        ` : ''}
+      </td>
+      <td><span class="sims-badge-sm">${escapeHtml(q.language || detectedLanguage)}</span></td>
+      <td>${typeBadge}</td>
+      <td>
+        <select class="sims-select-sm" onchange="updateQuestionMarks(${idx}, this.value)">
+          <option value="1.0" ${m === 1.0 ? 'selected' : ''}>1.0 M</option>
+          <option value="2.0" ${m === 2.0 ? 'selected' : ''}>2.0 M</option>
+          <option value="0.5" ${m === 0.5 ? 'selected' : ''}>0.5 M</option>
+          <option value="3.0" ${m === 3.0 ? 'selected' : ''}>3.0 M</option>
+        </select>
+        <span class="autosave-saved-tag" id="saved-tag-${idx}" style="display:none; color:#059669; font-weight:700; font-size:11px;">Saved</span>
+      </td>
+      <td style="color: #64748B;">-${parseFloat(q.negative_marks || 0.0).toFixed(2)}</td>
+      <td style="color: #475569; font-size: 11.5px;">${escapeHtml(optsPreview)}</td>
+      <td>
+        <select class="sims-select-sm" style="font-weight: 800; color: #15271E;" onchange="updateQuestionAnswer(${idx}, this.value)">
+          <option value="A" ${q.correct_answer === 'A' ? 'selected' : ''}>A</option>
+          <option value="B" ${q.correct_answer === 'B' ? 'selected' : ''}>B</option>
+          <option value="C" ${q.correct_answer === 'C' ? 'selected' : ''}>C</option>
+          <option value="D" ${q.correct_answer === 'D' ? 'selected' : ''}>D</option>
+        </select>
+      </td>
+      <td>${statusBadge}</td>
+      <td style="text-align: right; white-space: nowrap;">
+        <button type="button" class="sims-btn sims-btn-sm" onclick="openEditModal(${idx})" title="Edit / Debug Details">Edit</button>
+        <button type="button" class="sims-btn sims-btn-sm sims-btn-danger" onclick="deleteQuestion(${idx})" title="Remove">✕</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Update KPI counters
+  document.getElementById('kpiLanguage').textContent = detectedLanguage;
+  document.getElementById('kpiTotalQuestions').textContent = questionsData.length;
+  document.getElementById('kpiOneMarkCount').textContent = oneCount;
+  document.getElementById('kpiTwoMarkCount').textContent = twoCount;
+  document.getElementById('kpiTotalMarks').textContent = totalMarks.toFixed(2);
+
+  // Update Filter Chip counts
+  document.getElementById('count-all').textContent = filterCounts.all;
+  document.getElementById('count-needs_review').textContent = filterCounts.needs_review;
+  document.getElementById('count-approved').textContent = filterCounts.approved;
+  document.getElementById('count-overlap').textContent = filterCounts.overlap;
+  document.getElementById('count-missing_answer').textContent = filterCounts.missing_answer;
+
+  // Update progress line
+  const progEl = document.getElementById('approvalProgressLine');
+  if (progEl) {
+    progEl.textContent = `${approvedCount} of ${questionsData.length} approved`;
+  }
+}
+
+function updateQuestionAnswer(idx, ans) {
+  if (questionsData[idx]) {
+    questionsData[idx].correct_answer = ans;
+    debouncedAutosave(idx);
+    renderQuestionsReviewTable();
+  }
+}
+
+function toggleApproveQuestion(idx) {
+  if (questionsData[idx]) {
+    questionsData[idx].is_approved = !questionsData[idx].is_approved;
+    if (questionsData[idx].is_approved) {
+      questionsData[idx].is_flagged_for_review = false;
+    }
+    debouncedAutosave(idx);
+    renderQuestionsReviewTable();
+  }
+}
+
+// Global Keyboard Shortcuts for Review Step
+document.addEventListener('keydown', function(e) {
+  // Only activate shortcuts when in Step 3 and not typing inside an input/textarea
+  const step3Pane = document.getElementById('step-pane-3');
+  if (!step3Pane || !step3Pane.classList.contains('active')) return;
+  if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+
+  if (e.key === 'j' || e.key === 'J' || e.key === 'ArrowDown') {
+    e.preventDefault();
+    if (activeQuestionIndex < questionsData.length - 1) {
+      activeQuestionIndex++;
+      renderQuestionsReviewTable();
+      document.getElementById(`q-row-${activeQuestionIndex}`)?.scrollIntoView({ block: 'nearest' });
+    }
+  } else if (e.key === 'k' || e.key === 'K' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (activeQuestionIndex > 0) {
+      activeQuestionIndex--;
+      renderQuestionsReviewTable();
+      document.getElementById(`q-row-${activeQuestionIndex}`)?.scrollIntoView({ block: 'nearest' });
+    }
+  } else if (['1', '2', '3', '4'].includes(e.key)) {
+    e.preventDefault();
+    const optMap = { '1': 'A', '2': 'B', '3': 'C', '4': 'D' };
+    const ans = optMap[e.key];
+    updateQuestionAnswer(activeQuestionIndex, ans);
+  } else if (e.key === 'a' || e.key === 'A') {
+    e.preventDefault();
+    toggleApproveQuestion(activeQuestionIndex);
+  } else if (e.key === 'd' || e.key === 'D') {
+    e.preventDefault();
+    openEditModal(activeQuestionIndex);
+  }
+});
+
+      <td style="color: #64748B;">-${parseFloat(q.negative_marks || 0.0).toFixed(2)}</td>
+      <td style="color: #475569; font-size: 11.5px;">${escapeHtml(optsPreview)}</td>
+      <td><strong style="color: #15271E;">${escapeHtml(q.correct_answer || 'A')}</strong></td>
+      <td>${statusBadge}</td>
+      <td style="text-align: right;">
+        <button type="button" class="sims-btn sims-btn-sm" onclick="openEditModal(${idx})" title="Edit question details">Edit</button>
+        <button type="button" class="sims-btn sims-btn-sm sims-btn-danger" onclick="deleteQuestion(${idx})" title="Remove">✕</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Update Review KPIs
+  document.getElementById('kpiLanguage').textContent = detectedLanguage;
+  document.getElementById('kpiTotalQuestions').textContent = questionsData.length;
+  document.getElementById('kpiOneMarkCount').textContent = oneCount;
+  document.getElementById('kpiTwoMarkCount').textContent = twoCount;
+  document.getElementById('kpiTotalMarks').textContent = totalMarks.toFixed(2);
+}
+
+function updateQuestionMarks(idx, val) {
+  if (questionsData[idx]) {
+    const marks = parseFloat(val);
+    questionsData[idx].marks = marks;
+    questionsData[idx].section = (marks === 1.0) ? 'SEC_A' : (marks === 2.0 ? 'SEC_B' : 'CORE');
+    const qType = questionsData[idx].question_type || 'MCQ';
+    questionsData[idx].negative_marks = (qType === 'MCQ') ? (marks === 2.0 ? 0.66 : 0.33) : 0.0;
+    renderQuestionsReviewTable();
+    updateLiveMarksCalculation();
+  }
+}
+
+function deleteQuestion(idx) {
+  if (confirm(`Remove Question #${idx + 1}?`)) {
+    questionsData.splice(idx, 1);
+    // Renumber questions sequentially
+    questionsData.forEach((q, i) => { q.question_number = i + 1; q.order = i + 1; });
+    renderQuestionsReviewTable();
+    updateLiveMarksCalculation();
+  }
+}
+
+function addBlankQuestion() {
+  const newNum = questionsData.length + 1;
+  questionsData.push({
+    question_number: newNum,
+    question_text: "New test question formulation...",
+    language: detectedLanguage,
+    question_type: "MCQ",
+    section: "SEC_A",
+    marks: 1.0,
+    negative_marks: 0.33,
+    option_a: "Option A",
+    option_b: "Option B",
+    option_c: "Option C",
+    option_d: "Option D",
+    correct_answer: "A",
+    explanation: "",
+    diagram_url: "",
+    is_valid: true,
+    is_flagged_for_review: false,
+    order: newNum
+  });
+  renderQuestionsReviewTable();
+  updateLiveMarksCalculation();
+}
+
+function clearExtractedQuestions() {
+  if (confirm("Clear all extracted questions?")) {
+    questionsData = [];
+    renderQuestionsReviewTable();
+    updateLiveMarksCalculation();
+    goToStep(1);
+  }
+}
+
+// 7. Auto-Balance Marks Strategy (50/50: 5×1M + 5×2M = 15M for 10 Qs)
+async function rebalanceMarks(pattern) {
+  if (questionsData.length === 0) return;
+
+  try {
+    const csrf = getCsrfToken();
+    const reqHeaders = { 'Content-Type': 'application/json' };
+    if (csrf) reqHeaders['X-CSRFToken'] = csrf;
+
+    const res = await fetch('/api/courses/test-series/intelligent-generator/recalculate-marks/', {
+      method: 'POST',
+      headers: reqHeaders,
+      body: JSON.stringify({
+        questions: questionsData,
+        pattern: pattern
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      questionsData = data.questions;
+      renderQuestionsReviewTable();
+      updateLiveMarksCalculation();
+    }
+  } catch (err) {
+    // Client-side fallback balancing
+    const half = Math.floor(questionsData.length / 2);
+    questionsData.forEach((q, idx) => {
+      const is1M = idx < half;
+      q.marks = is1M ? 1.0 : 2.0;
+      q.section = is1M ? 'SEC_A' : 'SEC_B';
+      q.negative_marks = (q.question_type === 'MCQ') ? (is1M ? 0.33 : 0.66) : 0.0;
+    });
+    renderQuestionsReviewTable();
+    updateLiveMarksCalculation();
+  }
+}
+
+// 8. Live Marks Calculation Engine
+function updateLiveMarksCalculation() {
+  const total = questionsData.length;
+  let count1M = 0;
+  let count2M = 0;
+  let totalMarks = 0;
+  let countMCQ = 0;
+  let countMSQ = 0;
+  let countNAT = 0;
+
+  questionsData.forEach(q => {
+    const m = parseFloat(q.marks || 1.0);
+    totalMarks += m;
+    if (m === 1.0) count1M++;
+    else if (m === 2.0) count2M++;
+
+    const t = q.question_type || 'MCQ';
+    if (t === 'MCQ') countMCQ++;
+    else if (t === 'MSQ') countMSQ++;
+    else if (t === 'NAT') countNAT++;
+  });
+
+  document.getElementById('calcTotalQuestions').textContent = total;
+  document.getElementById('calcOneMarkCount').textContent = count1M;
+  document.getElementById('calcTwoMarkCount').textContent = count2M;
+  document.getElementById('calcTotalMarks').textContent = totalMarks.toFixed(2);
+
+  document.getElementById('calcMCQCount').textContent = `${countMCQ} Single Correct`;
+  document.getElementById('calcMSQCount').textContent = `${countMSQ} Multi-Select`;
+  document.getElementById('calcNATCount').textContent = `${countNAT} Numerical`;
+
+  const pct1 = total > 0 ? Math.round((count1M / total) * 100) : 50;
+  const pct2 = 100 - pct1;
+
+  document.getElementById('propLabel1').textContent = `Section A (1-Mark): ${pct1}% (${count1M} Qs)`;
+  document.getElementById('propLabel2').textContent = `Section B (2-Mark): ${pct2}% (${count2M} Qs)`;
+  document.getElementById('propBar1').style.width = `${pct1}%`;
+  document.getElementById('propBar2').style.width = `${pct2}%`;
+
+  document.getElementById('calcFormulaSummary').textContent =
+    `${count1M} Questions × 1 Mark (${count1M * 1} M) + ${count2M} Questions × 2 Marks (${count2M * 2} M) = ${totalMarks.toFixed(2)} Total Marks`;
+}
+
+function syncPatternAndRecalculate() {
+  const pat = document.getElementById('calc_pattern_select').value;
+  rebalanceMarks(pat);
+}
+
+// 9. Synchronize Test Configuration
+function updateTestConfigFromState() {
+  const seriesSelect = document.getElementById('target_series_id');
+  const actionSelect = document.getElementById('target_test_action');
+  const selectedSeriesId = seriesSelect && seriesSelect.value ? parseInt(seriesSelect.value) : null;
+  const selAction = actionSelect ? actionSelect.value : '__NEW__';
+
+  const series = selectedSeriesId ? seriesListJson.find(s => s.id === selectedSeriesId) : null;
+  const nextNum = series ? (series.next_test_number || (series.active_tests_count + 1)) : 1;
+  const nextNumPad = String(nextNum).padStart(2, '0');
+
+  if (selAction && selAction !== '__NEW__') {
+    let matched = null;
+    if (series && series.existing_tests) {
+      matched = series.existing_tests.find(t => t.id == selAction);
+    }
+    if (!matched) {
+      matched = testsJson.find(t => t.id == selAction);
+    }
+    if (matched) {
+      document.getElementById('cfg_title').value = matched.title;
+      document.getElementById('cfg_branch').value = (series ? series.branch : matched.branch) || 'CSE';
+      document.getElementById('cfg_type').value = matched.test_type || 'Full Length Mock';
+      document.getElementById('cfg_duration').value = matched.duration_minutes || 180;
+    }
+  } else {
+    if (series) {
+      const seriesTitleClean = series.title.replace(/\s*\(.*?\)\s*/g, ' ').trim();
+      if (detectedLanguage === 'Hindi') {
+        document.getElementById('cfg_title').value = `${seriesTitleClean} — मॉक टेस्ट #${nextNumPad}`;
+      } else {
+        document.getElementById('cfg_title').value = `${seriesTitleClean} — Mock Test #${nextNumPad}`;
+      }
+      document.getElementById('cfg_branch').value = series.branch || 'CSE';
+      document.getElementById('cfg_course_id').value = series.id;
+      document.getElementById('cfg_test_status').value = 'PUBLISHED';
+      document.getElementById('cfg_visibility_status').value = 'RESTRICTED';
+    } else {
+      if (!document.getElementById('cfg_title').value) {
+        document.getElementById('cfg_title').value = detectedLanguage === 'Hindi' ?
+          "भौतिक विज्ञान परीक्षा पेपर (GATE 2026)" :
+          "Engineering Mock Test Series (GATE 2026)";
+      }
+    }
+  }
+  document.getElementById('cfg_language').value = detectedLanguage;
+
+  if (!document.getElementById('cfg_instructions').value) {
+    if (detectedLanguage === 'Hindi') {
+      document.getElementById('cfg_instructions').value =
+        "1. यह परीक्षा सर्वर घड़ी द्वारा समयबद्ध है।\n" +
+        "2. खण्ड 'अ' में 1 अंक के प्रश्न हैं (MCQ के लिए -0.33 ऋणात्मक अंकन)।\n" +
+        "3. खण्ड 'ब' में 2 अंक के प्रश्न हैं (MCQ के लिए -0.66 ऋणात्मक अंकन)।\n" +
+        "4. बहु-चयन (MSQ) तथा संख्यात्मक (NAT) प्रश्नों में कोई ऋणात्मक अंकन नहीं है।";
+    } else {
+      document.getElementById('cfg_instructions').value =
+        "1. Total duration of exam is monitored by the server timer.\n" +
+        "2. Section A contains 1-mark questions with 0.33 negative marking for MCQs.\n" +
+        "3. Section B contains 2-mark questions with 0.66 negative marking for MCQs.\n" +
+        "4. MSQ and NAT questions carry NO negative marking.";
+    }
+  }
+}
+
+// 10. Examination Paper Preview Rendering
+function renderPaperPreview() {
+  const title = document.getElementById('cfg_title').value || "Examination Test Paper";
+  const subject = document.getElementById('cfg_subject').value || "Technical Discipline";
+  const topic = document.getElementById('cfg_topic').value || "Comprehensive Syllabus";
+  const duration = document.getElementById('cfg_duration').value || "180";
+  const lang = document.getElementById('cfg_language').value || detectedLanguage;
+  const inst = document.getElementById('cfg_instructions').value || "";
+
+  document.getElementById('paperTitle').textContent = title;
+  document.getElementById('paperSubject').textContent = subject;
+  document.getElementById('paperTopic').textContent = topic;
+  document.getElementById('paperLanguage').textContent = lang;
+  document.getElementById('paperDuration').textContent = duration;
+  document.getElementById('paperTotalQs').textContent = questionsData.length;
+
+  let totalMarks = 0;
+  const secAQs = [];
+  const secBQs = [];
+
+  questionsData.forEach(q => {
+    const m = parseFloat(q.marks || 1.0);
+    totalMarks += m;
+    if (m === 1.0) secAQs.push(q);
+    else secBQs.push(q);
+  });
+
+  document.getElementById('paperTotalMarks').textContent = totalMarks.toFixed(2);
+  document.getElementById('paperInstructionsText').innerHTML = inst.replace(/\n/g, '<br>');
+
+  document.getElementById('secATitle').textContent = lang === 'Hindi' ? "खण्ड 'अ' — 1 अंक के प्रश्न" : "Section A — 1 Mark Questions";
+  document.getElementById('secASubtitle').textContent = `${secAQs.length} Questions • ${secAQs.length * 1} Marks • (-0.33 for MCQ)`;
+
+  document.getElementById('secBTitle').textContent = lang === 'Hindi' ? "खण्ड 'ब' — 2 अंक के प्रश्न" : "Section B — 2 Mark Questions";
+  document.getElementById('secBSubtitle').textContent = `${secBQs.length} Questions • ${secBQs.length * 2} Marks • (-0.66 for MCQ)`;
+
+  // Render Section A list
+  const listA = document.getElementById('sectionAQuestionsList');
+  listA.innerHTML = '';
+  secAQs.forEach(q => listA.appendChild(createExamQuestionElement(q)));
+
+  // Render Section B list
+  const listB = document.getElementById('sectionBQuestionsList');
+  listB.innerHTML = '';
+  secBQs.forEach(q => listB.appendChild(createExamQuestionElement(q)));
+}
+
+function createExamQuestionElement(q) {
+  const div = document.createElement('div');
+  div.className = 'sims-exam-q';
+
+  const typeLabel = q.question_type === 'MSQ' ? '[MSQ - One or More Correct]' :
+                    q.question_type === 'NAT' ? '[NAT - Numerical]' : '[MCQ]';
+
+  div.innerHTML = `
+    <div class="sims-exam-q-text">
+      <strong>Q${q.question_number}.</strong> ${escapeHtml(q.question_text || '')}
+      <span style="font-size: 11.5px; color: #475569; font-weight: 700; margin-left: 6px;">${typeLabel}</span>
+      <span style="float: right; font-weight: 700; color: #0F172A;">[${q.marks} Mark${q.marks > 1 ? 's' : ''}]</span>
+    </div>
+    ${q.diagram_url ? `<div style="margin: 10px 0;"><img src="${q.diagram_url}" alt="Question Diagram" style="max-height: 220px; max-width: 100%; object-fit: contain; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 6px; background: #FFF; box-shadow: 0 2px 8px rgba(0,0,0,0.06);"></div>` : ''}
+    ${q.question_type !== 'NAT' ? `
+      <div class="sims-exam-options-grid">
+        <div><strong>(A)</strong> ${escapeHtml(q.option_a || '—')}</div>
+        <div><strong>(B)</strong> ${escapeHtml(q.option_b || '—')}</div>
+        <div><strong>(C)</strong> ${escapeHtml(q.option_c || '—')}</div>
+        <div><strong>(D)</strong> ${escapeHtml(q.option_d || '—')}</div>
+      </div>
+    ` : ''}
+    <div class="sims-exam-q-footer">
+      <span>Verified Key: <strong>${escapeHtml(q.correct_answer || 'A')}</strong></span>
+      ${q.explanation ? `<span>Solution available in candidate portal</span>` : ''}
+    </div>
+  `;
+  return div;
+}
+
+// 11. Edit Question Modal Logic
+function openEditModal(idx) {
+  const q = questionsData[idx];
+  if (!q) return;
+
+  document.getElementById('editModalQIndex').value = idx;
+  document.getElementById('modalTitle').textContent = `Edit Question #${q.question_number || (idx + 1)}`;
+  document.getElementById('modalQText').value = q.question_text || '';
+  document.getElementById('modalQType').value = q.question_type || 'MCQ';
+  document.getElementById('modalQMarks').value = (q.marks || 1.0).toFixed(1);
+  document.getElementById('modalQNegMarks').value = q.negative_marks || 0.33;
+  document.getElementById('modalOptA').value = q.option_a || '';
+  document.getElementById('modalOptB').value = q.option_b || '';
+  document.getElementById('modalOptC').value = q.option_c || '';
+  document.getElementById('modalOptD').value = q.option_d || '';
+  document.getElementById('modalAnsKey').value = q.correct_answer || 'A';
+  document.getElementById('modalQExpl').value = q.explanation || '';
+  const dUrl = q.diagram_url || '';
+  document.getElementById('modalQDiagram').value = dUrl;
+  const pBox = document.getElementById('modalDiagramPreviewBox');
+  const pImg = document.getElementById('modalDiagramImg');
+  if (dUrl && pBox && pImg) {
+    pImg.src = dUrl;
+    pBox.style.display = 'block';
+  } else if (pBox) {
+    pBox.style.display = 'none';
+  }
+
+  syncKeyToCheckbox(q.correct_answer || 'A');
+  onModalTypeChange();
+
+  document.getElementById('editQuestionModal').style.display = 'flex';
+}
+
+function triggerManualDiagramUpload() {
+  document.getElementById('manualCropFileInput')?.click();
+}
+
+function removeModalDiagram() {
+  document.getElementById('modalQDiagram').value = '';
+  const pBox = document.getElementById('modalDiagramPreviewBox');
+  if (pBox) pBox.style.display = 'none';
+}
+
+function handleManualCropFile(input) {
+  if (input.files && input.files[0]) {
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      document.getElementById('modalQDiagram').value = e.target.result;
+      const pImg = document.getElementById('modalDiagramImg');
+      const pBox = document.getElementById('modalDiagramPreviewBox');
+      if (pImg && pBox) {
+        pImg.src = e.target.result;
+        pBox.style.display = 'block';
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function closeEditModal() {
+  document.getElementById('editQuestionModal').style.display = 'none';
+}
+
+function saveEditModalChanges() {
+  const idx = parseInt(document.getElementById('editModalQIndex').value);
+  if (idx < 0 || !questionsData[idx]) return;
+
+  const q = questionsData[idx];
+  q.question_text = document.getElementById('modalQText').value.trim();
+  q.question_type = document.getElementById('modalQType').value;
+  q.marks = parseFloat(document.getElementById('modalQMarks').value);
+  q.negative_marks = parseFloat(document.getElementById('modalQNegMarks').value);
+  q.option_a = document.getElementById('modalOptA').value.trim();
+  q.option_b = document.getElementById('modalOptB').value.trim();
+  q.option_c = document.getElementById('modalOptC').value.trim();
+  q.option_d = document.getElementById('modalOptD').value.trim();
+  q.correct_answer = document.getElementById('modalAnsKey').value.trim();
+  q.explanation = document.getElementById('modalQExpl').value.trim();
+  q.diagram_url = document.getElementById('modalQDiagram').value.trim();
+
+  q.section = (q.marks === 1.0) ? 'SEC_A' : (q.marks === 2.0 ? 'SEC_B' : 'CORE');
+  q.is_valid = boolText(q.question_text) && (q.question_type === 'NAT' || (boolText(q.option_a) && boolText(q.option_b)));
+  q.is_flagged_for_review = !q.is_valid;
+
+  closeEditModal();
+  renderQuestionsReviewTable();
+  updateLiveMarksCalculation();
+}
+
+function onModalTypeChange() {
+  const t = document.getElementById('modalQType').value;
+  const isNAT = (t === 'NAT');
+  document.getElementById('modalOptionsGroup').style.display = isNAT ? 'none' : 'block';
+  if (t === 'MSQ' || t === 'NAT') {
+    document.getElementById('modalQNegMarks').value = '0.00';
+  } else {
+    const m = parseFloat(document.getElementById('modalQMarks').value);
+    document.getElementById('modalQNegMarks').value = (m === 2.0 ? '0.66' : '0.33');
+  }
+}
+
+function onModalMarksChange() {
+  const m = parseFloat(document.getElementById('modalQMarks').value);
+  const t = document.getElementById('modalQType').value;
+  if (t === 'MCQ') {
+    document.getElementById('modalQNegMarks').value = (m === 2.0 ? '0.66' : '0.33');
+  }
+}
+
+function syncCheckboxToKey() {
+  const keys = [];
+  if (document.getElementById('chkAnsA').checked) keys.push('A');
+  if (document.getElementById('chkAnsB').checked) keys.push('B');
+  if (document.getElementById('chkAnsC').checked) keys.push('C');
+  if (document.getElementById('chkAnsD').checked) keys.push('D');
+  document.getElementById('modalAnsKey').value = keys.join(', ');
+}
+
+function syncKeyToCheckbox(keyStr) {
+  const norm = (keyStr || '').toUpperCase();
+  document.getElementById('chkAnsA').checked = norm.includes('A');
+  document.getElementById('chkAnsB').checked = norm.includes('B');
+  document.getElementById('chkAnsC').checked = norm.includes('C');
+  document.getElementById('chkAnsD').checked = norm.includes('D');
+}
+
+function toggleImmediateUnlock(isImmediate) {
+  const dateInput = document.getElementById('cfg_start_date');
+  if (!dateInput) return;
+  if (isImmediate) {
+    dateInput.value = '';
+    dateInput.disabled = true;
+    dateInput.style.background = '#F1F5F9';
+    dateInput.style.color = '#94A3B8';
+  } else {
+    dateInput.disabled = false;
+    dateInput.style.background = '#FFFFFF';
+    dateInput.style.color = '#0F172A';
+  }
+}
+
+// 12. Final Test Paper Publishing to Database
+async function publishTestToDatabase() {
+  if (questionsData.length === 0) {
+    alert("No questions available to publish.");
+    return;
+  }
+
+  const publishBtn = document.getElementById('publishBtn');
+  publishBtn.disabled = true;
+  publishBtn.textContent = "⏳ Publishing Exam Paper...";
+
+  const seriesSelect = document.getElementById('target_series_id');
+  const selectedSeriesId = seriesSelect && seriesSelect.value ? parseInt(seriesSelect.value) : null;
+  const actionVal = document.getElementById('target_test_action') ? document.getElementById('target_test_action').value : '__NEW__';
+  const testIdVal = (actionVal && actionVal !== '__NEW__') ? parseInt(actionVal) : null;
+
+  const series = selectedSeriesId ? seriesListJson.find(s => s.id === selectedSeriesId) : null;
+  const nextNum = series ? (series.next_test_number || (series.active_tests_count + 1)) : 1;
+
+  const unlockImmediately = document.getElementById('cfg_unlock_immediately') ? document.getElementById('cfg_unlock_immediately').checked : true;
+  const startDateVal = unlockImmediately ? null : (document.getElementById('cfg_start_date') ? (document.getElementById('cfg_start_date').value || null) : null);
+
+  const payload = {
+    job_id: currentJobId,
+    test_id: testIdVal,
+    course_id: selectedSeriesId || (document.getElementById('cfg_course_id') ? (parseInt(document.getElementById('cfg_course_id').value) || null) : null),
+    order: testIdVal ? null : nextNum,
+    title: document.getElementById('cfg_title').value.trim(),
+    branch: document.getElementById('cfg_branch').value.trim(),
+    test_type: document.getElementById('cfg_type').value.trim(),
+    subject: document.getElementById('cfg_subject').value.trim(),
+    topic: document.getElementById('cfg_topic').value.trim(),
+    language: document.getElementById('cfg_language').value.trim(),
+    duration_minutes: parseInt(document.getElementById('cfg_duration').value || 180),
+    instructions: document.getElementById('cfg_instructions').value.trim(),
+    start_date: startDateVal,
+    end_date: document.getElementById('cfg_end_date') ? (document.getElementById('cfg_end_date').value || null) : null,
+    test_status: document.getElementById('cfg_test_status') ? document.getElementById('cfg_test_status').value : 'PUBLISHED',
+    visibility_status: document.getElementById('cfg_visibility_status') ? document.getElementById('cfg_visibility_status').value : 'RESTRICTED',
+    questions: questionsData
+  };
+
+  try {
+    const csrf = getCsrfToken();
+    const reqHeaders = { 'Content-Type': 'application/json' };
+    if (csrf) reqHeaders['X-CSRFToken'] = csrf;
+
+    const res = await fetch('/api/courses/test-series/intelligent-generator/publish/', {
+      method: 'POST',
+      headers: reqHeaders,
+      body: JSON.stringify(payload)
+    });
+
+    let data = {};
+    try {
+      data = await res.json();
+    } catch (e) {
+      const text = await res.text();
+      throw new Error(`Server returned status ${res.status}: ${text.substring(0, 150)}`);
+    }
+
+    if (!res.ok || !data.success) {
+      publishBtn.disabled = false;
+      publishBtn.textContent = "🚀 Publish Test to CBT Catalog →";
+      const errorMsg = (data.errors && data.errors.length)
+        ? data.errors.join("\n")
+        : (data.error || data.detail || `Validation failed (HTTP ${res.status})`);
+      alert("Validation Failed Before Publishing:\n" + errorMsg);
+      return;
+    }
+
+    const resOrder = data.order || nextNum;
+    const resSeries = data.course_title || (series ? series.title : "Test Series Portal");
+    alert(`🎉 Successfully Published Test No. ${resOrder} under "${resSeries}"!\n\n` +
+          `Test Title: ${data.title}\n` +
+          `Discipline: ${data.branch}\n` +
+          `Total Questions: ${data.total_questions}\n` +
+          `Total Marks: ${data.total_marks}\n\n` +
+          `✅ Students enrolled in or purchasing this test series will immediately see Test No. ${resOrder} in their portal!\n\n` +
+          `Redirecting to Question Bank...`);
+    window.location.href = data.questions_url || `/admin/courses/testquestion/?test__id__exact=${data.test_id}`;
+
+  } catch (err) {
+    publishBtn.disabled = false;
+    publishBtn.textContent = "🚀 Publish Test to CBT Catalog →";
+    alert("Error publishing test: " + err.message);
+  }
+}
+
+// 13. UI Helpers & Filtering for Series & Test Numbering
+function onSeriesChange() {
+  const seriesSelect = document.getElementById('target_series_id');
+  const actionSelect = document.getElementById('target_test_action');
+  const badge = document.getElementById('seriesActiveStatusBadge');
+  const summaryText = document.getElementById('seriesSummaryText');
+  const chipsContainer = document.getElementById('seriesExistingChips');
+  const targetTestIdHidden = document.getElementById('target_test_id');
+  const targetBranchHidden = document.getElementById('target_branch');
+
+  const selectedSeriesId = seriesSelect.value ? parseInt(seriesSelect.value) : null;
+  if (!selectedSeriesId) {
+    if (badge) {
+      badge.innerHTML = '<span>⚠️ No Test Series Selected</span>';
+      badge.style.borderColor = '#F59E0B';
+      badge.style.color = '#FDE68A';
+    }
+    if (actionSelect) actionSelect.innerHTML = '<option value="__NEW__">✨ Create Next Test Paper</option>';
+    if (summaryText) summaryText.innerHTML = '💡 Select a Test Series above to configure automatic test numbering.';
+    if (chipsContainer) chipsContainer.innerHTML = '';
+    return;
+  }
+
+  const series = seriesListJson.find(s => s.id === selectedSeriesId);
+  if (!series) return;
+
+  const nextNum = series.next_test_number || (series.active_tests_count + 1);
+  const activeCount = series.active_tests_count || 0;
+
+  // Update Status Badge
+  if (badge) {
+    badge.innerHTML = `<span>Currently Active: <strong>${activeCount} Paper${activeCount === 1 ? '' : 's'}</strong> &bull; Next: <strong>Test No. ${nextNum}</strong></span>`;
+    badge.style.borderColor = '#10B981';
+    badge.style.color = '#34D399';
+  }
+
+  // Populate Action Options
+  if (actionSelect) {
+    actionSelect.innerHTML = '';
+    const newOpt = document.createElement('option');
+    newOpt.value = '__NEW__';
+    newOpt.textContent = `✨ Create Next: Test No. ${nextNum} (Recommended)`;
+    actionSelect.appendChild(newOpt);
+
+    if (series.existing_tests && series.existing_tests.length > 0) {
+      series.existing_tests.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.id;
+        opt.textContent = `📝 Append to Test #${t.order}: ${t.title} (${t.questions_count} Qs)`;
+        actionSelect.appendChild(opt);
+      });
+    }
+
+    if (preselectedTestId && series.existing_tests && series.existing_tests.some(t => t.id == preselectedTestId)) {
+      actionSelect.value = preselectedTestId;
+      if (targetTestIdHidden) targetTestIdHidden.value = preselectedTestId;
+    } else {
+      actionSelect.value = '__NEW__';
+      if (targetTestIdHidden) targetTestIdHidden.value = '__NEW__';
+    }
+  }
+
+  if (targetBranchHidden) targetBranchHidden.value = series.branch || 'CSE';
+
+  // Summary Text
+  if (summaryText) {
+    summaryText.innerHTML = `🎯 <strong>Target Series:</strong> ${series.title} [${series.branch}] &bull; <strong>Will Add:</strong> Test No. ${nextNum} &bull; <strong>Student Access:</strong> Restricted to buyers of this test series.`;
+  }
+
+  // Existing Chips
+  if (chipsContainer) {
+    chipsContainer.innerHTML = '<span style="color:#94A3B8; font-size:11px;">Active Papers in Series:</span>';
+    if (series.existing_tests && series.existing_tests.length > 0) {
+      series.existing_tests.forEach(t => {
+        const chip = document.createElement('span');
+        chip.className = 'sims-badge-sm';
+        chip.style.cssText = 'background:rgba(16,185,129,0.15); border:1px solid #10B981; color:#A7F3D0; font-size:10.5px; padding:2px 8px; border-radius:6px;';
+        chip.textContent = `Test #${t.order}: ${t.title.length > 28 ? t.title.substring(0, 28) + '...' : t.title}`;
+        chipsContainer.appendChild(chip);
+      });
+    } else {
+      chipsContainer.innerHTML += '<span style="color:#FDE68A; font-size:11px;">None yet (This will be Test #01)</span>';
+    }
+  }
+
+  // Synchronize Step 4 fields
+  const nextNumPad = String(nextNum).padStart(2, '0');
+  const seriesTitleClean = series.title.replace(/\s*\(.*?\)\s*/g, ' ').trim();
+  const cfgTitle = document.getElementById('cfg_title');
+  if (cfgTitle) {
+    cfgTitle.value = (detectedLanguage === 'Hindi')
+      ? `${seriesTitleClean} — मॉक टेस्ट #${nextNumPad}`
+      : `${seriesTitleClean} — Mock Test #${nextNumPad}`;
+  }
+  const cfgBranch = document.getElementById('cfg_branch');
+  if (cfgBranch) cfgBranch.value = series.branch || 'CSE';
+  const cfgCourseId = document.getElementById('cfg_course_id');
+  if (cfgCourseId) cfgCourseId.value = series.id;
+
+  updateSidebarWidget(series, nextNum);
+}
+
+function onTestActionChange() {
+  const actionVal = document.getElementById('target_test_action') ? document.getElementById('target_test_action').value : '__NEW__';
+  const targetTestIdHidden = document.getElementById('target_test_id');
+  if (targetTestIdHidden) targetTestIdHidden.value = actionVal;
+
+  const seriesSelect = document.getElementById('target_series_id');
+  const selectedSeriesId = seriesSelect && seriesSelect.value ? parseInt(seriesSelect.value) : null;
+  const series = selectedSeriesId ? seriesListJson.find(s => s.id === selectedSeriesId) : null;
+  if (!series) return;
+
+  if (actionVal === '__NEW__') {
+    const nextNum = series.next_test_number || (series.active_tests_count + 1);
+    const nextNumPad = String(nextNum).padStart(2, '0');
+    const seriesTitleClean = series.title.replace(/\s*\(.*?\)\s*/g, ' ').trim();
+    const cfgTitle = document.getElementById('cfg_title');
+    if (cfgTitle) {
+      cfgTitle.value = (detectedLanguage === 'Hindi')
+        ? `${seriesTitleClean} — मॉक टेस्ट #${nextNumPad}`
+        : `${seriesTitleClean} — Mock Test #${nextNumPad}`;
+    }
+    updateSidebarWidget(series, nextNum);
+  } else {
+    const matched = series.existing_tests ? series.existing_tests.find(t => t.id == actionVal) : null;
+    if (matched) {
+      const cfgTitle = document.getElementById('cfg_title');
+      if (cfgTitle) cfgTitle.value = matched.title;
+      const cfgType = document.getElementById('cfg_type');
+      if (cfgType) cfgType.value = matched.test_type || 'Full Length Mock';
+      const widgetTitle = document.getElementById('sidebarTestTitle');
+      const widgetCount = document.getElementById('sidebarTestCount');
+      if (widgetTitle) widgetTitle.textContent = matched.title;
+      if (widgetCount) widgetCount.textContent = matched.questions_count || 0;
+    }
+  }
+}
+
+function updateSidebarWidget(series, nextNum) {
+  const widgetTitle = document.getElementById('sidebarTestTitle');
+  const widgetBranch = document.getElementById('sidebarTestBranchBadge');
+  const widgetCount = document.getElementById('sidebarTestCount');
+  if (widgetTitle) widgetTitle.textContent = `${series.title} (Test #${nextNum})`;
+  if (widgetBranch) widgetBranch.textContent = series.branch;
+  if (widgetCount) widgetCount.textContent = "0 (New)";
+}
+
+function onPatternChange() {
+  currentPattern = document.getElementById('target_pattern').value;
+  if (questionsData.length > 0) {
+    rebalanceMarks(currentPattern);
+  }
+}
+
+function resetPipeline() {
+  if (confirm("Reset current upload and start fresh?")) {
+    clearSelectedFile();
+    questionsData = [];
+    document.getElementById('rawTextarea').value = '';
+    goToStep(1);
+  }
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.toString()
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function boolText(val) {
+  return val && val.trim().length > 0;
+}
+
+// Initial Setup
+document.addEventListener('DOMContentLoaded', () => {
+  if (preselectedSeriesId) {
+    const sel = document.getElementById('target_series_id');
+    if (sel) {
+      sel.value = preselectedSeriesId;
+      onSeriesChange();
+    }
+  } else if (seriesListJson && seriesListJson.length > 0) {
+    // Default to Chemical Engineering (CH) if available, or first series
+    const chSeries = seriesListJson.find(s => s.branch === 'CH');
+    const sel = document.getElementById('target_series_id');
+    if (sel) {
+      sel.value = chSeries ? chSeries.id : seriesListJson[0].id;
+      onSeriesChange();
+    }
+  }
+});
+</script>
+{% endblock %}

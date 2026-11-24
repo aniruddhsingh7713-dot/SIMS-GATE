@@ -1,0 +1,60 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls static %}
+
+{% block form_top %}
+{{ block.super }}
+{% if original and original.pk %}
+<div class="sims-test-summary-panel" style="background: #FFFFFF; border: 1px solid #CBD5E1; border-left: 5px solid #D4AF37; border-radius: 8px; padding: 16px 20px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(15,23,42,0.05);">
+  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; border-bottom: 1px solid #F1F5F9; padding-bottom: 10px;">
+    <div>
+      <h3 style="margin: 0; font-size: 15.5px; font-weight: 800; color: #0F172A;">📊 Test Paper Quality & Readiness Summary</h3>
+      <span style="font-size: 12px; color: #64748B;">Audit of questions, scoring, answer keys and figure attachments</span>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <a href="/admin/courses/testseriesitem/{{ original.pk }}/preview-as-student/" target="_blank" class="sims-btn" style="background: #0F4336; color: #FFFFFF; font-weight: 700; padding: 6px 14px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; border: 1px solid #D4AF37; font-size: 12.5px;">
+        <span>👁️ Preview as student</span>
+        <span style="font-size: 11px; opacity: 0.85;">(Staff Only &bull; No Attempt)</span>
+      </a>
+      <a href="{% url 'admin:courses_testquestion_bulk_import' %}?test_id={{ original.pk }}" class="sims-btn" style="background: #1E293B; color: #E2E8F0; font-weight: 600; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px;">
+        📥 Import Questions
+      </a>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px;">
+    <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 10px 14px;">
+      <span style="display: block; font-size: 11.5px; color: #64748B; font-weight: 600;">Questions Count</span>
+      <strong style="font-size: 18px; color: #0F172A;">{{ original.questions.count }}</strong>
+    </div>
+
+    <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 10px 14px;">
+      <span style="display: block; font-size: 11.5px; color: #64748B; font-weight: 600;">Total Marks</span>
+      <strong style="font-size: 18px; color: #D4AF37;">{{ original.total_marks }}</strong>
+    </div>
+
+    <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 10px 14px;">
+      <span style="display: block; font-size: 11.5px; color: #64748B; font-weight: 600;">Missing Answers</span>
+      {% with missing_ans=original.missing_answers_count %}
+      <strong style="font-size: 18px; color: {% if missing_ans > 0 %}#DC2626{% else %}#059669{% endif %};">
+        {{ missing_ans|default:0 }}
+      </strong>
+      {% endwith %}
+    </div>
+
+    <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 10px 14px;">
+      <span style="display: block; font-size: 11.5px; color: #64748B; font-weight: 600;">Without Explanation</span>
+      {% with missing_exp=original.missing_explanations_count %}
+      <strong style="font-size: 18px; color: {% if missing_exp > 0 %}#D97706{% else %}#059669{% endif %};">
+        {{ missing_exp|default:0 }}
+      </strong>
+      {% endwith %}
+    </div>
+
+    <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 10px 14px;">
+      <span style="display: block; font-size: 11.5px; color: #64748B; font-weight: 600;">With Diagrams</span>
+      <strong style="font-size: 18px; color: #2563EB;">{{ original.diagrams_count|default:0 }}</strong>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static admin_filters %}
+
+{% block coltype %}{% endblock %}
+{% block content_title %}{% endblock %}
+{% block bodyclass %}{{ block.super }} dashboard app-{{ app_list.0.app_label }} sims-dashboard{% endblock %}
+
+{% block content %}
+<div class="sims-dash-wrapper">
+  
+  <div class="sims-hero-banner sims-hero-app">
+    <div class="sims-hero-main">
+      <div class="sims-hero-badge">
+        <span>App Administration</span>
+      </div>
+      <h1 class="sims-hero-title">{{ app_list.0.name }}</h1>
+      <p class="sims-hero-subtitle">
+        Manage models, records, and administrative permissions for {{ app_list.0.name }}.
+      </p>
+    </div>
+    <div class="sims-hero-actions">
+      <a href="{% url 'admin:index' %}" class="sims-action-pill">
+        <span>← Back to Dashboard</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="sims-dash-grid">
+    <div class="sims-modules-column" id="content-main">
+      {% for app in app_list %}
+        <div class="sims-app-card app-{{ app.app_label }}">
+          <div class="sims-app-card-header">
+            <div class="sims-app-title-group">
+              <span class="sims-app-icon">📂</span>
+              <div>
+                <h2 class="sims-app-title">{{ app.name }}</h2>
+                <span class="sims-app-badge">{{ app.models|length }} Entities</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="sims-model-table-container">
+            <table class="sims-model-table">
+              <thead>
+                <tr>
+                  <th scope="col" style="width: 55%;">Administrative Entity</th>
+                  <th scope="col" style="width: 45%; text-align: right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for model in app.models %}
+                  <tr class="sims-model-row model-{{ model.object_name|lower }}">
+                    <td class="sims-model-name-cell">
+                      {% if model.admin_url %}
+                        <a href="{{ model.admin_url }}" class="sims-model-link">
+                          <span class="sims-model-bullet"></span>
+                          <span class="sims-model-text">{{ model.name }}</span>
+                        </a>
+                      {% else %}
+                        <span class="sims-model-text-disabled">{{ model.name }}</span>
+                      {% endif %}
+                    </td>
+                    <td class="sims-model-actions-cell">
+                      <div class="sims-row-btns">
+                        {% if model.add_url %}
+                          <a href="{{ model.add_url }}" class="sims-btn-add">
+                            <span class="sims-btn-plus">+</span>
+                            <span>Add</span>
+                          </a>
+                        {% endif %}
+                        {% if model.admin_url %}
+                          <a href="{{ model.admin_url }}" class="sims-btn-change">Manage</a>
+                        {% endif %}
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="sims-sidebar-column" id="content-related">
+      <div class="sims-sidebar-card">
+        <div class="sims-sidebar-header">
+          <div class="sims-sidebar-title-group">
+            <span class="sims-sidebar-icon">⏱️</span>
+            <div>
+              <h3 class="sims-sidebar-title">Recent Activity</h3>
+              <span class="sims-sidebar-subtitle">{{ app_list.0.name }} Scope</span>
+            </div>
+          </div>
+        </div>
+        <div class="sims-activity-body">
+          {% load log %}
+          {% get_admin_log 8 as admin_log for_user user %}
+          {% if not admin_log %}
+            <p class="sims-empty-log">{% translate 'None available' %}</p>
+          {% else %}
+            <ul class="sims-timeline-list">
+              {% for entry in admin_log %}
+                <li class="sims-timeline-item {% if entry.is_addition %}is-addition{% elif entry.is_change %}is-change{% elif entry.is_deletion %}is-deletion{% endif %}">
+                  <div class="sims-timeline-badge">
+                    {% if entry.is_addition %}＋{% elif entry.is_change %}✎{% elif entry.is_deletion %}✕{% endif %}
+                  </div>
+                  <div class="sims-timeline-content">
+                    <div class="sims-timeline-object">
+                      {% if entry.is_deletion or not entry.get_admin_url %}
+                        <span class="sims-entry-name">{{ entry.object_repr }}</span>
+                      {% else %}
+                        <a href="{{ entry.get_admin_url }}" class="sims-entry-link">{{ entry.object_repr }}</a>
+                      {% endif %}
+                    </div>
+                    <div class="sims-timeline-meta">
+                      <span class="sims-content-type">{{ entry.content_type.name|capfirst }}</span>
+                      <span class="sims-entry-time">{{ entry.action_time|date:"M j, H:i" }}</span>
+                    </div>
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,380 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static admin_filters %}
+
+{% block coltype %}
+<script>
+  (function() {
+    try {
+      localStorage.removeItem('sims_admin_layout');
+    } catch(e) {}
+  })();
+</script>
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+{% block bodyclass %}{{ block.super }} dashboard sims-dashboard{% endblock %}
+{% block nav-breadcrumbs %}{% endblock %}
+{% block nav-sidebar %}{% endblock %}
+
+{% block content %}
+<div class="sims-dash-wrapper">
+
+  <!-- Executive Hero & Live System KPI Header -->
+  <div class="sims-hero-banner">
+    <div class="sims-hero-main">
+      <div class="sims-hero-badge">
+        <span class="sims-badge-dot"></span>
+        <span>Institutional Administration Portal &bull; Raipur Central Studio</span>
+      </div>
+      <h1 class="sims-hero-title">SIMS GATE Operations Management Center</h1>
+      <p class="sims-hero-subtitle">
+        Centralized executive control for GATE test series, questions bank, AI OCR paper imports, weekly timetable matrix, faculty mentorship, and admissions ledger.
+      </p>
+
+      <!-- Live KPI Metrics Strip (Clickable to Filtered Views) -->
+      <div class="sims-kpi-grid">
+        <a href="{% url 'admin:courses_course_changelist' %}?is_active__exact=1" class="sims-kpi-card" style="text-decoration:none; color:inherit;">
+          <div class="sims-kpi-icon">🎓</div>
+          <div class="sims-kpi-content">
+            <span class="sims-kpi-val">{{ sims_stats.active_courses|default:"0" }}</span>
+            <span class="sims-kpi-lbl">Active Programs</span>
+          </div>
+        </a>
+
+        <a href="{% url 'admin:courses_testquestion_changelist' %}" class="sims-kpi-card" style="text-decoration:none; color:inherit;">
+          <div class="sims-kpi-icon">📝</div>
+          <div class="sims-kpi-content">
+            <span class="sims-kpi-val">{{ sims_stats.total_questions|default:"0" }}</span>
+            <span class="sims-kpi-lbl">CBT Questions Bank</span>
+          </div>
+        </a>
+
+        <a href="{% url 'admin:courses_livelecture_changelist' %}?status__exact=LIVE" class="sims-kpi-card sims-kpi-live" style="text-decoration:none; color:inherit;">
+          <div class="sims-kpi-icon">
+            <span class="sims-pulsing-circle"></span>
+          </div>
+          <div class="sims-kpi-content">
+            <span class="sims-kpi-val">{{ sims_stats.live_classes|default:"0" }}</span>
+            <span class="sims-kpi-lbl">Live Streams Active</span>
+          </div>
+        </a>
+
+        <a href="{% url 'admin:courses_faculty_changelist' %}?is_active__exact=1" class="sims-kpi-card" style="text-decoration:none; color:inherit;">
+          <div class="sims-kpi-icon">👨‍🏫</div>
+          <div class="sims-kpi-content">
+            <span class="sims-kpi-val">{{ sims_stats.faculty_count|default:"0" }}</span>
+            <span class="sims-kpi-lbl">Ex-IITian Mentors</span>
+          </div>
+        </a>
+
+        <a href="{% url 'admin:courses_timetableslot_changelist' %}" class="sims-kpi-card" style="text-decoration:none; color:inherit;">
+          <div class="sims-kpi-icon">📅</div>
+          <div class="sims-kpi-content">
+            <span class="sims-kpi-val">{{ sims_stats.timetable_count|default:"0" }}</span>
+            <span class="sims-kpi-lbl">Timetable Slots</span>
+          </div>
+        </a>
+
+        <a href="{% url 'admin:courses_studentenrollment_changelist' %}?is_active__exact=1" class="sims-kpi-card" style="text-decoration:none; color:inherit;">
+          <div class="sims-kpi-icon">💳</div>
+          <div class="sims-kpi-content">
+            <span class="sims-kpi-val">{{ sims_stats.active_enrollments|default:"0" }}</span>
+            <span class="sims-kpi-lbl">Enrolled Students</span>
+          </div>
+        </a>
+      </div>
+
+      <!-- Small "Today" Metric Line -->
+      <div class="sims-today-strip" style="margin-top: 14px; padding: 10px 16px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; display: flex; align-items: center; gap: 24px; font-size: 13px; color: #E2E8F0;">
+        <span style="font-weight: 700; color: #D4AF37; display: flex; align-items: center; gap: 6px;">
+          <span>📍</span> Today's Activity:
+        </span>
+        <span>Payments today: <strong style="color: #38BDF8;">{{ sims_today.payments|default:"0" }}</strong></span>
+        <span>•</span>
+        <span>New students today: <strong style="color: #34D399;">{{ sims_today.students|default:"0" }}</strong></span>
+        <span>•</span>
+        <span>Test attempts today: <strong style="color: #FBBF24;">{{ sims_today.attempts|default:"0" }}</strong></span>
+      </div>
+
+      {% if needs_attention %}
+      <!-- Needs Attention Panel -->
+      <div class="sims-attention-panel" style="margin-top: 14px; padding: 12px 18px; background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 8px;">
+        <div style="font-size: 12px; font-weight: 800; color: #92400E; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">
+          ⚠️ Needs Attention
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          {% for item in needs_attention %}
+          <div style="display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: #78350F;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="display: inline-block; padding: 1px 6px; font-size: 11px; font-weight: 800; border-radius: 4px; background: {{ item.badge_color }}; color: #FFFFFF;">{{ item.badge }}</span>
+              <strong>{{ item.title }}</strong> &mdash; <span>{{ item.description }}</span>
+            </div>
+            <a href="{{ item.fix_url }}" style="font-weight: 700; color: #B45309; text-decoration: underline;">Fix &rarr;</a>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Quick Actions Panel -->
+    <div class="sims-hero-actions">
+      <div class="sims-actions-card">
+        <h3 class="sims-actions-title">⚡ Instant Operations</h3>
+        <div class="sims-actions-buttons">
+          <a href="{% url 'admin:courses_testquestion_bulk_import' %}" class="sims-btn-action sims-btn-action-primary">
+            <span class="sims-btn-icon">📥</span>
+            <div>
+              <span class="sims-btn-text">Bulk Import Questions</span>
+              <span class="sims-btn-sub">AI CSV / JSON format</span>
+            </div>
+          </a>
+          <a href="{% url 'admin:courses_questionpaperimportjob_add' %}" class="sims-btn-action">
+            <span class="sims-btn-icon">🤖</span>
+            <div>
+              <span class="sims-btn-text">AI PDF Ingestion Job</span>
+              <span class="sims-btn-sub">OCR automated queue</span>
+            </div>
+          </a>
+          <a href="/api/courses/daily-challenge/bulk-import/" class="sims-btn-action">
+            <span class="sims-btn-icon">⚡</span>
+            <div>
+              <span class="sims-btn-text">Daily PYQs Import</span>
+              <span class="sims-btn-sub">ExamSide 5-drill loader</span>
+            </div>
+          </a>
+          <a href="{% url 'admin:courses_timetableslot_changelist' %}" class="sims-btn-action">
+            <span class="sims-btn-icon">📅</span>
+            <div>
+              <span class="sims-btn-text">Classroom Matrix</span>
+              <span class="sims-btn-sub">Manage weekly batches</span>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Two-Column Operations Layout: Sections Grid + Live Activity Feed -->
+  <div class="sims-dash-columns">
+    
+    <!-- Left Column: Structured Operational Sections -->
+    <div class="sims-modules-column" id="content-main">
+
+      <!-- Module Header Strip -->
+      <div class="sims-toolbar-strip" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 0 4px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 13px; font-weight: 800; color: #1E293B; text-transform: uppercase; letter-spacing: 0.05em;">Administrative Systems</span>
+          <span style="font-size: 12px; color: #64748B;">&bull; Operations Matrix</span>
+        </div>
+      </div>
+
+      {% if sims_dashboard_sections %}
+        {% for section in sims_dashboard_sections %}
+          <div class="sims-app-card section-{{ section.id }}" style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 14px; margin-bottom: 24px; box-shadow: 0 4px 16px -2px rgba(15,23,42,0.04); overflow: hidden;">
+            
+            <div class="sims-app-card-header" style="background: #F8FAFC; border-bottom: 1px solid #E2E8F0; padding: 16px 22px; display: flex; align-items: center; justify-content: space-between;">
+              <div class="sims-app-title-group" style="display: flex; align-items: center; gap: 12px;">
+                <span class="sims-app-icon" style="font-size: 24px; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: #FFFFFF; border-radius: 10px; border: 1px solid #E2E8F0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                  {{ section.icon }}
+                </span>
+                <div>
+                  <h2 class="sims-app-title" style="font-size: 16px; font-weight: 800; color: #0F172A; margin: 0;">
+                    {{ section.title }}
+                  </h2>
+                  <span style="font-size: 12px; color: #64748B; display: block; margin-top: 2px;">
+                    {{ section.subtitle }}
+                  </span>
+                </div>
+              </div>
+              <span class="sims-app-badge" style="background: #15271E; color: #D4AF37; font-size: 11.5px; font-weight: 800; padding: 4px 12px; border-radius: 999px; border: 1px solid rgba(212,175,55,0.4);">
+                {{ section.badge }}
+              </span>
+            </div>
+
+            <!-- Responsive Entity Cards Grid -->
+            <div class="sims-model-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; padding: 20px; background: #FAFBFD; border-top: 1px solid #F1F5F9;">
+              {% for model in section.models %}
+                <div class="sims-entity-card model-{{ model.object_name|lower }}" style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between; min-height: 175px; box-shadow: 0 1px 3px rgba(15,23,42,0.04); position: relative; transition: all 0.2s ease;">
+                  
+                  <!-- Top bar: Icon Badge + Count Pill -->
+                  <div class="sims-card-top-bar" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                    <div class="sims-card-icon-badge" style="width: 38px; height: 38px; border-radius: 10px; background: #F1F5F9; border: 1px solid #E2E8F0; display: inline-flex; align-items: center; justify-content: center; font-size: 19px;">
+                      {{ model.icon|default:"📄" }}
+                    </div>
+                    {% if model.count is not None %}
+                      <span class="sims-card-count-badge" style="display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 999px; font-size: 12px; font-weight: 800; color: #1E293B;">
+                        <span style="width: 6px; height: 6px; border-radius: 50%; background: #059669; display: inline-block;"></span>
+                        <strong>{{ model.count }}</strong> Records
+                      </span>
+                    {% else %}
+                      <span class="sims-card-count-badge" style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 999px; font-size: 11.5px; font-weight: 700; color: #64748B;">
+                        &bull; Active
+                      </span>
+                    {% endif %}
+                  </div>
+
+                  <!-- Entity Title & Description -->
+                  <div class="sims-card-main-info" style="margin-bottom: 14px;">
+                    <h3 class="sims-card-title" style="margin: 0 0 6px 0; font-size: 15px; font-weight: 800; line-height: 1.35;">
+                      {% if model.admin_url %}
+                        <a href="{{ model.admin_url }}" style="color: #0F172A; text-decoration: none;" title="Manage {{ model.name }}">{{ model.name }}</a>
+                      {% else %}
+                        <span style="color: #0F172A;">{{ model.name }}</span>
+                      {% endif %}
+                    </h3>
+                    {% if model.description %}
+                      <p class="sims-card-desc" style="margin: 0; font-size: 12px; color: #64748B; line-height: 1.45;">{{ model.description }}</p>
+                    {% else %}
+                      <p class="sims-card-desc" style="margin: 0; font-size: 12px; color: #94A3B8; font-style: italic;">Manage records for {{ model.name|lower }}.</p>
+                    {% endif %}
+                  </div>
+
+                  <!-- Card Footer Actions -->
+                  <div class="sims-card-footer" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 12px; border-top: 1px solid #F1F5F9; margin-top: auto;">
+                    {% if model.extra_btn %}
+                      <a href="{{ model.extra_btn.url }}" class="sims-card-btn-extra" style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background: #15271E; color: #D4AF37; border: 1px solid #D4AF37; border-radius: 6px; font-size: 11px; font-weight: 800; text-decoration: none; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                        {{ model.extra_btn.label }}
+                      </a>
+                    {% else %}
+                      <div></div>
+                    {% endif %}
+                    <div class="sims-card-btn-group" style="display: flex; align-items: center; gap: 6px;">
+                      {% if model.add_url %}
+                        <a href="{{ model.add_url }}" class="sims-card-btn-add" style="display: inline-flex; align-items: center; padding: 4px 10px; background: #F8FAFC; color: #0F172A; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 11.5px; font-weight: 700; text-decoration: none;" title="Add new {{ model.name }}">
+                          <span>＋ Add</span>
+                        </a>
+                      {% endif %}
+                      {% if model.admin_url %}
+                        <a href="{{ model.admin_url }}" class="sims-card-btn-manage" style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; background: #059669; color: #FFFFFF; border: 1px solid #047857; border-radius: 6px; font-size: 11.5px; font-weight: 700; text-decoration: none;" title="Manage {{ model.name }}">
+                          <span>Manage</span>
+                          <span style="font-size: 13px; line-height: 1;">&rarr;</span>
+                        </a>
+                      {% endif %}
+                    </div>
+                  </div>
+
+                </div>
+              {% endfor %}
+            </div>
+
+          </div>
+        {% endfor %}
+
+      {% elif app_list %}
+        {% for app in app_list %}
+          <div class="sims-app-card app-{{ app.app_label }}" style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 14px; margin-bottom: 24px; box-shadow: 0 4px 16px -2px rgba(15,23,42,0.04); overflow: hidden;">
+            <div class="sims-app-card-header" style="background: #F8FAFC; border-bottom: 1px solid #E2E8F0; padding: 16px 22px; display: flex; align-items: center; justify-content: space-between;">
+              <h2 class="sims-app-title" style="font-size: 16px; font-weight: 800; color: #0F172A; margin: 0;">
+                <a href="{{ app.app_url }}" style="color: inherit; text-decoration: none;">{{ app.name }}</a>
+              </h2>
+              <span class="sims-app-badge">{{ app.models|length }} Models Registered</span>
+            </div>
+
+            <!-- Cards Grid for Generic Apps -->
+            <div class="sims-model-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; padding: 20px; background: #FAFBFD; border-top: 1px solid #F1F5F9;">
+              {% for model in app.models %}
+                <div class="sims-entity-card model-{{ model.object_name|lower }}" style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between; min-height: 175px; box-shadow: 0 1px 3px rgba(15,23,42,0.04); position: relative;">
+                  <div class="sims-card-top-bar" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                    <div class="sims-card-icon-badge" style="width: 38px; height: 38px; border-radius: 10px; background: #F1F5F9; border: 1px solid #E2E8F0; display: inline-flex; align-items: center; justify-content: center; font-size: 19px;">📄</div>
+                    <span class="sims-card-count-badge" style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 999px; font-size: 11.5px; font-weight: 700; color: #64748B;">&bull; Model</span>
+                  </div>
+                  <div class="sims-card-main-info" style="margin-bottom: 14px;">
+                    <h3 class="sims-card-title" style="margin: 0 0 6px 0; font-size: 15px; font-weight: 800; line-height: 1.35;">
+                      {% if model.admin_url %}
+                        <a href="{{ model.admin_url }}" style="color: #0F172A; text-decoration: none;">{{ model.name }}</a>
+                      {% else %}
+                        <span style="color: #0F172A;">{{ model.name }}</span>
+                      {% endif %}
+                    </h3>
+                  </div>
+                  <div class="sims-card-footer" style="display: flex; align-items: center; justify-content: flex-end; gap: 6px; padding-top: 12px; border-top: 1px solid #F1F5F9; margin-top: auto;">
+                    <div class="sims-card-btn-group" style="display: flex; align-items: center; gap: 6px;">
+                      {% if model.add_url %}<a href="{{ model.add_url }}" class="sims-card-btn-add" style="display: inline-flex; align-items: center; padding: 4px 10px; background: #F8FAFC; color: #0F172A; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 11.5px; font-weight: 700; text-decoration: none;">＋ Add</a>{% endif %}
+                      {% if model.admin_url %}<a href="{{ model.admin_url }}" class="sims-card-btn-manage" style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; background: #059669; color: #FFFFFF; border: 1px solid #047857; border-radius: 6px; font-size: 11.5px; font-weight: 700; text-decoration: none;">Manage &rarr;</a>{% endif %}
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="sims-empty-msg">{% translate 'You don’t have permission to view or edit anything.' %}</p>
+      {% endif %}
+    </div>
+
+    <!-- Right Column: Recent Actions & System Live Status -->
+    <div class="sims-sidebar-column" id="content-related">
+      <div class="sims-sidebar-card" style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 14px; padding: 22px; box-shadow: 0 4px 16px -2px rgba(15,23,42,0.04); margin-bottom: 24px;">
+        <div class="sims-sidebar-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #F1F5F9; padding-bottom: 12px; margin-bottom: 16px;">
+          <div class="sims-sidebar-title-group" style="display: flex; align-items: center; gap: 8px;">
+            <span class="sims-sidebar-icon">⏱️</span>
+            <div>
+              <h3 class="sims-sidebar-title" style="font-size: 15px; font-weight: 800; color: #0F172A; margin: 0;">Recent Activity</h3>
+              <span class="sims-sidebar-subtitle" style="font-size: 11.5px; color: #64748B;">System Operations Audit Trail</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="sims-activity-body">
+          {% load log %}
+          {% get_admin_log 8 as admin_log for_user user %}
+          {% if not admin_log %}
+            <p class="sims-empty-log" style="font-size: 13px; color: #94A3B8; text-align: center; padding: 20px 0;">{% translate 'None available' %}</p>
+          {% else %}
+            <ul class="sims-timeline-list" style="list-style: none; padding: 0; margin: 0;">
+              {% for entry in admin_log %}
+                <li class="sims-timeline-item {% if entry.is_addition %}is-addition{% elif entry.is_change %}is-change{% elif entry.is_deletion %}is-deletion{% endif %}" style="display: flex; gap: 12px; margin-bottom: 14px; font-size: 13px;">
+                  <div class="sims-timeline-badge" style="width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; flex-shrink: 0; {% if entry.is_addition %}background:#ECFDF5; color:#059669;{% elif entry.is_change %}background:#EFF6FF; color:#2563EB;{% else %}background:#FEF2F2; color:#DC2626;{% endif %}">
+                    {% if entry.is_addition %}＋{% elif entry.is_change %}✎{% elif entry.is_deletion %}✕{% endif %}
+                  </div>
+                  <div class="sims-timeline-content" style="flex: 1;">
+                    <div class="sims-timeline-object" style="font-weight: 700; color: #0F172A;">
+                      {% if entry.is_deletion or not entry.get_admin_url %}
+                        <span>{{ entry.object_repr }}</span>
+                      {% else %}
+                        <a href="{{ entry.get_admin_url }}" style="color: #0F172A; text-decoration: none;">{{ entry.object_repr }}</a>
+                      {% endif %}
+                    </div>
+                    <div class="sims-timeline-meta" style="font-size: 11px; color: #64748B; margin-top: 2px;">
+                      <span>{{ entry.content_type.name|capfirst }}</span> &bull; 
+                      <span>{{ entry.action_time|date:"M j, H:i" }}</span>
+                    </div>
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Quick Platform Info Card -->
+      <div class="sims-info-widget" style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 14px; padding: 20px; box-shadow: 0 4px 16px -2px rgba(15,23,42,0.04);">
+        <h4 style="font-size: 13.5px; font-weight: 800; color: #0F172A; margin: 0 0 12px; text-transform: uppercase; letter-spacing: 0.05em;">Raipur Studio Environment</h4>
+        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12.5px;">
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #F1F5F9; padding-bottom: 6px;">
+            <span style="color: #64748B;">Central Campus:</span>
+            <strong style="color: #0F172A;">Choubey Colony, Raipur</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #F1F5F9; padding-bottom: 6px;">
+            <span style="color: #64748B;">Target Exam Gateways:</span>
+            <strong style="color: #059669;">GATE 2026 &amp; 2027</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #F1F5F9; padding-bottom: 6px;">
+            <span style="color: #64748B;">OCR &amp; AI Engine:</span>
+            <strong style="color: #D4AF37;">Active &bull; Tesseract v5</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #64748B;">Theme Standard:</span>
+            <strong style="color: #15271E;">Forest Green &amp; Champagne Gold</strong>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+{% endblock %}

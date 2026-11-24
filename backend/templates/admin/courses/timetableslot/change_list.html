@@ -1,0 +1,280 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls %}
+
+{% block object-tools-items %}
+  <li>
+    <a href="{% url 'admin:courses_timetableslot_matrix_builder' %}?branch={{ selected_branch }}&week={{ selected_week }}" class="addlink" style="background: linear-gradient(135deg, #15271E 0%, #1F382B 100%) !important; border: 1.5px solid #C5A059 !important; color: #FFFFFF !important; font-weight: 700 !important; padding: 10px 18px !important; border-radius: 8px !important; box-shadow: 0 4px 12px rgba(21, 39, 30, 0.2) !important; display: inline-flex !important; align-items: center !important; gap: 8px !important;">
+      <span>⚡</span>
+      <span>Create / Edit Timetable (Matrix)</span>
+    </a>
+  </li>
+  {{ block.super }}
+{% endblock %}
+
+{% block content %}
+<style>
+  .sims-matrix-card {
+    background: #FFFFFF;
+    border: 1.5px solid #CBD5E1;
+    border-radius: 14px;
+    box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.08);
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+  .sims-matrix-header {
+    background: #15271E;
+    color: #FFFFFF;
+    padding: 16px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    border-bottom: 2px solid #C5A059;
+  }
+  .sims-matrix-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    font-weight: 800;
+    color: #FFFFFF;
+    margin: 0;
+  }
+  .sims-matrix-badge {
+    background: #C5A059;
+    color: #15271E;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+  }
+  .sims-branch-bar {
+    background: #F8FAFC;
+    padding: 12px 20px;
+    border-bottom: 1px solid #E2E8F0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .sims-branch-pills {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .sims-branch-pill {
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 750;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    border: 1px solid #CBD5E1;
+    background: #FFFFFF;
+    color: #334155;
+    display: inline-block;
+  }
+  .sims-branch-pill:hover {
+    background: #E2E8F0;
+    color: #0F172A;
+  }
+  .sims-branch-pill.active {
+    background: #15271E;
+    color: #FFFFFF;
+    border-color: #15271E;
+    box-shadow: 0 2px 6px rgba(21, 39, 30, 0.2);
+  }
+  .sims-matrix-table-wrap {
+    overflow-x: auto;
+    padding: 16px;
+  }
+  .sims-matrix-grid-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 6px;
+    min-width: 900px;
+  }
+  .sims-matrix-grid-table th {
+    background: #F1F5F9;
+    color: #0F172A;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    padding: 10px 12px;
+    text-align: center;
+    border-radius: 8px;
+    border: 1px solid #E2E8F0;
+  }
+  .sims-time-header-cell {
+    width: 150px;
+    background: #15271E !important;
+    color: #FFFFFF !important;
+    border-color: #15271E !important;
+    text-align: left !important;
+    padding: 12px !important;
+    vertical-align: middle;
+  }
+  .sims-slot-cell {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    padding: 10px;
+    vertical-align: top;
+    min-width: 130px;
+    transition: all 0.15s ease;
+  }
+  .sims-slot-cell:hover {
+    border-color: #C5A059;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+  .sims-slot-cell.has-slot {
+    border-left: 4px solid #15803D;
+    background: #FAFAF9;
+  }
+  .sims-slot-cell.has-test {
+    border-left: 4px solid #D97706;
+    background: #FFFBEB;
+  }
+  .sims-slot-cell.is-empty {
+    border-style: dashed;
+    background: #F8FAFC;
+    color: #94A3B8;
+    text-align: center;
+    display: table-cell;
+  }
+  .sims-cell-subject {
+    font-size: 12.5px;
+    font-weight: 800;
+    color: #0F172A;
+    line-height: 1.3;
+    margin-bottom: 4px;
+  }
+  .sims-cell-faculty {
+    font-size: 11px;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 3px;
+  }
+  .sims-cell-meta {
+    font-size: 10px;
+    color: #64748B;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 6px;
+    padding-top: 4px;
+    border-top: 1px solid #E2E8F0;
+  }
+  .sims-cell-badge {
+    font-size: 9px;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+  .sims-badge-class { background: #DCFCE7; color: #15803D; }
+  .sims-badge-test { background: #FEF3C7; color: #B45309; }
+  .sims-badge-study { background: #E2E8F0; color: #475569; }
+</style>
+
+<!-- 1. Visual Weekly Timetable Matrix Card in Django Admin -->
+<div class="sims-matrix-card">
+  <div class="sims-matrix-header">
+    <div class="sims-matrix-title">
+      <span>📅</span>
+      <span>Weekly Timetable Matrix View (Rows &amp; Columns)</span>
+      <span class="sims-matrix-badge">{{ selected_branch }} · Week {{ selected_week }}</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span style="font-size: 12.5px; color: #E5C378; font-weight: 700;">{{ week_range_label }}</span>
+      <a href="{% url 'admin:courses_timetableslot_matrix_builder' %}?branch={{ selected_branch }}&week={{ selected_week }}" style="background: #C5A059; color: #15271E; font-weight: 800; font-size: 12px; padding: 6px 14px; border-radius: 6px; text-decoration: none;">
+        ⚡ Edit This Matrix
+      </a>
+    </div>
+  </div>
+
+  <!-- Branch Switcher Bar -->
+  <div class="sims-branch-bar">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="font-size: 11px; font-weight: 800; color: #64748B; text-transform: uppercase;">Switch Branch:</span>
+      <div class="sims-branch-pills">
+        {% for b_code, b_label in branches_list %}
+          <a href="?branch={{ b_code }}&week={{ selected_week }}" class="sims-branch-pill {% if b_code == selected_branch %}active{% endif %}">
+            {{ b_code }}
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+    <div style="font-size: 12px; font-weight: 700; color: #334155;">
+      {{ total_slots_found }} Active Slot{{ total_slots_found|pluralize }} Scheduled
+    </div>
+  </div>
+
+  <!-- Visual Matrix Table -->
+  <div class="sims-matrix-table-wrap">
+    <table class="sims-matrix-grid-table">
+      <thead>
+        <tr>
+          <th style="width: 140px; text-align: left;">Time Slot</th>
+          {% for d_code, d_name, d_date in matrix_days %}
+            <th>
+              <div>{{ d_name }}</div>
+              {% if d_date %}
+                <div style="font-size: 10px; color: #64748B; font-weight: 600;">{{ d_date }}</div>
+              {% endif %}
+            </th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in visual_matrix %}
+          <tr>
+            <!-- Time Column -->
+            <td class="sims-time-header-cell">
+              <div style="font-size: 11px; font-weight: 800; color: #E5C378;">{{ row.meta.label }}</div>
+              <div style="font-size: 10.5px; opacity: 0.85; margin-top: 2px;">{{ row.meta.time }}</div>
+            </td>
+
+            <!-- Monday to Saturday Day Cells -->
+            {% for cell in row.cells %}
+              {% if cell.slot %}
+                <td class="sims-slot-cell {% if cell.slot.slot_type == 'CBT_TEST' %}has-test{% else %}has-slot{% endif %}">
+                  <div class="sims-cell-subject">{{ cell.slot.subject }}</div>
+                  <div class="sims-cell-faculty">👤 {{ cell.slot.faculty_name }}</div>
+                  {% if cell.slot.room_or_mode %}
+                    <div style="font-size: 10px; color: #64748B;">📍 {{ cell.slot.room_or_mode }}</div>
+                  {% endif %}
+                  <div class="sims-cell-meta">
+                    <span class="sims-cell-badge {% if cell.slot.slot_type == 'CBT_TEST' %}sims-badge-test{% elif cell.slot.slot_type == 'SELF_STUDY' %}sims-badge-study{% else %}sims-badge-class{% endif %}">
+                      {{ cell.slot.get_slot_type_display|default:cell.slot.slot_type }}
+                    </span>
+                    <a href="{% url 'admin:courses_timetableslot_change' cell.slot.id %}" style="font-size: 10px; font-weight: 700; color: #2563EB;">Edit</a>
+                  </div>
+                </td>
+              {% else %}
+                <td class="sims-slot-cell is-empty">
+                  <div style="font-size: 11px; font-weight: 600; padding: 12px 0;">
+                    — Self-Study —
+                  </div>
+                </td>
+              {% endif %}
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+  <h3 style="font-size: 14px; font-weight: 800; color: #334155; margin: 0;">
+    📋 All Individual Records &amp; Bulk Actions
+  </h3>
+</div>
+
+{{ block.super }}
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:'SIMS GATE Administration' }}{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<meta name="color-scheme" content="light">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="sims-inline-master-theme">
+{% include "admin/custom_admin_inline.html" %}
+</style>
+<script src="{% static 'admin/js/interactive_admin.js' %}?v=20261106"></script>
+{% endblock %}
+
+{% block responsive %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static 'admin/css/custom_admin.css' %}?v=20261020_v100">
+{% endblock %}
+
+{% block branding %}
+<div id="site-name">
+  <a href="{% url 'admin:index' %}">
+    <span class="sims-crest">S</span>
+    <span class="sims-brand-text">SIMS GATE <span class="sims-sub-badge">Administration</span></span>
+  </a>
+</div>
+{% endblock %}
+
+{% block nav-global %}
+<div class="sims-nav-actions">
+  <a href="http://localhost:3000" target="_blank" rel="noopener noreferrer" class="sims-portal-btn">
+    <span>View Student Portal</span>
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="7" y1="17" x2="17" y2="7"></line>
+      <polyline points="7 7 17 7 17 17"></polyline>
+    </svg>
+  </a>
+</div>
+
+<!-- SIMS Executive Top Progress Loading Bar -->
+<div id="sims-loading-bar" class="sims-progress-bar" aria-hidden="true"></div>
+
+<script>
+  (function() {
+    var bar = document.getElementById('sims-loading-bar');
+    if (!bar) return;
+
+    function startProgress() {
+      bar.style.opacity = '1';
+      bar.style.width = '20%';
+      setTimeout(function() {
+        if (bar.style.opacity === '1') bar.style.width = '65%';
+      }, 150);
+      setTimeout(function() {
+        if (bar.style.opacity === '1') bar.style.width = '85%';
+      }, 500);
+    }
+
+    function completeProgress() {
+      bar.style.width = '100%';
+      setTimeout(function() {
+        bar.style.opacity = '0';
+        setTimeout(function() {
+          bar.style.width = '0%';
+        }, 300);
+      }, 200);
+    }
+
+    window.addEventListener('DOMContentLoaded', completeProgress);
+    window.addEventListener('load', completeProgress);
+
+    document.addEventListener('click', function(e) {
+      var target = e.target.closest('a');
+      if (target && target.href && !target.href.startsWith('javascript:') && !target.href.includes('#') && !target.target && target.origin === window.location.origin) {
+        startProgress();
+      }
+    });
+
+    document.addEventListener('submit', function(e) {
+      startProgress();
+    });
+  })();
+</script>
+{% endblock %}

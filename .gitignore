@@ -1,0 +1,79 @@
+# Python / Django
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+backend/.venv/
+**/venv/
+**/.venv/
+
+# Django specifics
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+backend/staticfiles/
+backend/backup-*/
+
+# Sensitive environment variables
+**/.env
+**/.env.local
+**/.env.*.local
+**/.env.production
+backend/.env
+frontend/.env
+
+# Node / Next.js
+node_modules/
+frontend/node_modules/
+frontend/.next/
+frontend/.vercel/
+.next/
+.vercel/
+out/
+build/
+coverage/
+
+# Scratch & development logs
+scratch/
+
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# IDE / OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.bak
+*.backup*
+*.before-*
+.DS_Store
+Thumbs.db
