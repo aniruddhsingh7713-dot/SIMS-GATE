@@ -1,0 +1,281 @@
+================================================================================
+SIMS GATE PLATFORM - MASTER PROJECT REQUIREMENTS & SETUP GUIDE
+================================================================================
+Generated for: SIMS GATE (Full-Stack Chemistry Education & Test Series Platform)
+Repository: https://github.com/aniruddhsingh7713-dot/SIMS-GATE
+OS: Windows 10/11 (PowerShell) / Linux / macOS
+================================================================================
+
+TABLE OF CONTENTS:
+1. System Prerequisites (System me kya-kya hona chaiye)
+2. Frontend Architecture & Requirements (Frontend me kya-kya use ho raha hai)
+3. Backend Architecture & Requirements (Backend me kya-kya use ho raha hai)
+4. Database & Backend Connection Explanation (Database connection kaise kaam karta hai)
+5. Environment Variables (.env Configuration)
+6. Complete PowerShell Automation Script (Sabhi requirements install & setup karne ka PS Code)
+
+================================================================================
+1. SYSTEM PREREQUISITES (System me kya-kya hona chaiye)
+================================================================================
+- Operating System: Windows 10/11, macOS, ya Ubuntu/Debian Linux
+- Python: Version 3.11.x, 3.12.x, ya 3.13.x (Installed: 3.13.6)
+  * PATH me "python" aur "pip" added hona chahiye.
+- Node.js & npm: Node.js LTS 20.x, 22.x, ya 24.x (Installed: v24.15.0)
+  * npm version 10.x ya 11.x (Installed: 11.19.0)
+- Database: PostgreSQL Server 15, 16, 17, ya 18 (Installed: PostgreSQL 18.6)
+  * Default Port: 5432
+  * Service name: postgresql-x64-18
+- Version Control: Git 2.40+ (Installed: 2.54.0)
+
+================================================================================
+2. FRONTEND ARCHITECTURE & REQUIREMENTS (Frontend me kya-kya use ho raha hai)
+================================================================================
+Directory Path: frontend/
+Framework: Next.js 15 (App Router, Turbopack, React 19)
+Styling: Tailwind CSS 4, CSS Modules
+
+Key Dependencies (npm packages in package.json):
+--------------------------------------------------------------------------------
+- next (16.4.3 / Next.js 15+ App Router): Server-Side Rendering (SSR), Static Site
+  Generation (SSG), Client Components aur API routing.
+- react (19.3.0) & react-dom (19.3.0): Core UI rendering engine.
+- typescript (5.x): Complete type-safety for state, props, and API responses.
+- tailwindcss (4.x) & @tailwindcss/turbopack: Modern utility-first styling.
+- framer-motion (14.2.0): Smooth UI animations, transitions, modals.
+- lucide-react (1.59.0): Modern icon library for dashboard, buttons, status indicators.
+- @phosphor-icons/react (2.1.10): Supplemental specialized icons.
+- @radix-ui/react-label & @radix-ui/react-slot: Accessible headless UI primitives.
+- clsx & tailwind-merge (3.7.0): Conditional styling and Tailwind class merging.
+- class-variance-authority (0.7.1): Component variants design system.
+
+Frontend Core Modules:
+--------------------------------------------------------------------------------
+1. Student Dashboard (/dashboard): Course progress, schedules, live class links.
+2. Device Management (/dashboard/devices): Shows the 2 registered device slots,
+   active device badges, last active timestamps, and device replacement request modal.
+3. CBT Proctored Exam Engine (CbtProctoredExamModal.tsx): Real GATE examination simulation,
+   scientific calculator, countdown timer, question palette, question navigation.
+4. Razorpay Payment Modal (RazorpayCheckoutModal.tsx): Client-side Razorpay checkout SDK
+   integration with order verification.
+5. Device Fingerprinting (src/lib/deviceFingerprint.ts): Browser characteristics, canvas,
+   screen specs, platform details generation without intrusive hardware scraping.
+6. Anti-Account Sharing Security Modal (DeviceLimitExceededModal.tsx): Triggers when 3rd device
+   attempts access.
+
+================================================================================
+3. BACKEND ARCHITECTURE & REQUIREMENTS (Backend me kya-kya use ho raha hai)
+================================================================================
+Directory Path: backend/
+Framework: Django 6.1.2 + Django REST Framework 3.18.3
+Database Adapter: psycopg 3 (psycopg-binary 3.3.6)
+
+Key Dependencies (pip packages in backend/requirements.txt):
+--------------------------------------------------------------------------------
+- Django==6.1.2: Core web framework, ORM, authentication, admin interface.
+- djangorestframework==3.18.3: RESTful APIs, serializers, permissions, authentication.
+- psycopg==3.3.6 & psycopg-binary==3.3.6: Modern, fast, PostgreSQL 3 adapter for Python.
+- django-cors-headers==4.9.0: Handles Cross-Origin Resource Sharing (CORS) between
+  Next.js (localhost:3000 / localhost:3001) and Django (127.0.0.1:8000).
+- python-dotenv==1.2.4: Loads secrets and DB credentials from .env file securely.
+- razorpay==2.0.1: Server-side Razorpay order creation, payment signature verification.
+- pymupdf==2.0 (fitz): High-speed PDF text, diagram, and page extraction for question banks.
+- pypdf==6.21.4: Secondary PDF parsing and splitting utility.
+- reportlab==5.1.0: Dynamic PDF generation for test papers and student reports.
+- asgiref==3.12.1 & sqlparse==0.6.0: Async server gateway and SQL formatting.
+- tzdata==2026.5: Timezone data for accurate Indian Standard Time (IST) scheduling.
+
+Backend Core Modules (Django Apps):
+--------------------------------------------------------------------------------
+1. accounts: User registration, login, token authentication, user profile management.
+2. courses: Test series catalog, courses, daily PYQ challenge, batch management,
+   faculty profiles, timetable matrix, and test access control.
+3. security: Enterprise 2-Device Limit & Anti-Account Sharing engine:
+   - AccountSecurityStatus: Account-level state (Active, Security Review, Locked, Suspended).
+   - StudentDevice: Registers up to 2 active devices per student with hashed tokens.
+   - DeviceLoginHistory: IP, User Agent, device type, and login timestamps.
+   - SecurityAlert: Auto-flagging 3rd device logins, token mismatch, suspicious activity.
+   - DeviceReplacementRequest: Student device change requests with admin approval.
+   - AdminSecurityAuditLog: Tamper-proof logs of all administrator actions.
+4. assessments & analytics: Test evaluation, marks allocation, percentile calculation.
+5. core: Shared utilities, base models, custom exceptions.
+
+================================================================================
+4. DATABASE & BACKEND CONNECTION EXPLANATION (Database connection kaise kaam karta hai)
+================================================================================
+SIMS GATE PostgreSQL database ke sath connect hone ke liye official modern adapter
+"psycopg" (Version 3) ka use karta hai.
+
+Step-by-Step Connection Flow:
+--------------------------------------------------------------------------------
+1. Secrets Loading:
+   Django startup ke waqt `backend/config/settings.py` me `python-dotenv` execute hota hai:
+   `load_dotenv(BASE_DIR / '.env')`
+   Ye `.env` file se DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT load karta hai.
+
+2. Database Engine Configuration (backend/config/settings.py):
+   DATABASES = {
+       "default": {
+           "ENGINE": "django.db.backends.postgresql",
+           "NAME": os.getenv("DB_NAME", "sims_gate_db"),
+           "USER": os.getenv("DB_USER", "postgres"),
+           "PASSWORD": os.getenv("DB_PASSWORD"),
+           "HOST": os.getenv("DB_HOST", "127.0.0.1"),
+           "PORT": os.getenv("DB_PORT", "5432"),
+       }
+   }
+
+3. TCP/IP Socket Connection:
+   Django backend localhost TCP port 5432 par PostgreSQL service se handshake karta hai.
+   Agar credentials sahi hain, toh persistent connection pool create hota hai.
+
+4. Concurrency & Row-Locking Security:
+   SIMS GATE ke 2-Device restriction me race conditions ko rokne ke liye Django ORM
+   PostgreSQL level transaction row-locking (`select_for_update()`) use karta hai:
+   `with transaction.atomic():`
+   `    devices = StudentDevice.objects.select_for_update().filter(student=user, is_active=True)`
+   Isse do simultaneous logins ek sath 3rd device register nahi kar sakte.
+
+5. Database Migrations:
+   Saare tables (`security_studentdevice`, `courses_testseries`, `auth_user`, etc.)
+   Django migrations ke zariye PostgreSQL me automatic create hote hain:
+   `python manage.py migrate`
+
+================================================================================
+5. ENVIRONMENT VARIABLES (.env Configuration)
+================================================================================
+Backend me ek `.env` file hoti hai (`backend/.env`):
+--------------------------------------------------------------------------------
+DJANGO_SECRET_KEY=django-insecure-your-super-secret-key-change-in-production
+DJANGO_DEBUG=True
+DJANGO_ALLOWED_HOSTS=127.0.0.1,localhost,testserver
+
+# PostgreSQL Database Credentials
+DB_NAME=sims_gate_db
+DB_USER=postgres
+DB_PASSWORD=your_postgresql_password
+DB_HOST=127.0.0.1
+DB_PORT=5432
+
+# Frontend Application URL (for CORS)
+FRONTEND_URL=http://localhost:3000,http://localhost:3001
+
+# Razorpay Payment Gateway (Test or Live)
+RAZORPAY_KEY_ID=rzp_test_your_key_id
+RAZORPAY_KEY_SECRET=your_razorpay_secret
+RAZORPAY_WEBHOOK_SECRET=your_webhook_secret
+--------------------------------------------------------------------------------
+
+================================================================================
+6. COMPLETE POWERSHELL AUTOMATION SCRIPT (Setup & Install All Requirements)
+================================================================================
+Niche diya gaya PowerShell code copy karke PowerShell terminal me run karein.
+Ye script automatic check karegi ki Python, Node, aur Postgres installed hain,
+backend venv banayegi, pip packages install karegi, frontend npm packages install karegi,
+PostgreSQL database create karegi, aur migrations apply karegi.
+
+---------------------------- POWERSHELL SCRIPT START ----------------------------
+# SIMS GATE - Complete Requirements Installer & Environment Setup Script
+# Run this inside the project root: C:\Users\aniru\Desktop\SIMS GATE
+
+Write-Host "==========================================================" -ForegroundColor Cyan
+Write-Host "   SIMS GATE - AUTOMATED REQUIREMENTS INSTALLER & SETUP   " -ForegroundColor Cyan
+Write-Host "==========================================================" -ForegroundColor Cyan
+
+$ProjectRoot = Get-Location
+$BackendDir = Join-Path $ProjectRoot "backend"
+$FrontendDir = Join-Path $ProjectRoot "frontend"
+
+# Step 1: Check System Tools
+Write-Host "`n[1/6] Checking System Prerequisites..." -ForegroundColor Yellow
+
+# Check Python
+try {
+    $pyVer = & python --version 2>&1
+    Write-Host "  [OK] Python Detected: $pyVer" -ForegroundColor Green
+} catch {
+    Write-Error "Python is not installed or not in PATH! Please install Python 3.11+."
+    exit 1
+}
+
+# Check Node.js
+try {
+    $nodeVer = & node --version 2>&1
+    Write-Host "  [OK] Node.js Detected: $nodeVer" -ForegroundColor Green
+} catch {
+    Write-Error "Node.js is not installed or not in PATH! Please install Node.js 20+."
+    exit 1
+}
+
+# Check PostgreSQL
+$psqlPath = "C:\Program Files\PostgreSQL\18\bin\psql.exe"
+if (-not (Test-Path $psqlPath)) {
+    $psqlCmd = Get-Command psql -ErrorAction SilentlyContinue
+    if ($psqlCmd) { $psqlPath = $psqlCmd.Source }
+}
+
+if (Test-Path $psqlPath) {
+    $pgVer = & $psqlPath --version 2>&1
+    Write-Host "  [OK] PostgreSQL Detected: $pgVer" -ForegroundColor Green
+} else {
+    Write-Host "  [!] PostgreSQL psql utility not found in standard path. Please ensure PostgreSQL service is running." -ForegroundColor Yellow
+}
+
+# Step 2: Setup Backend Python Virtual Environment
+Write-Host "`n[2/6] Setting up Python Virtual Environment (backend/.venv)..." -ForegroundColor Yellow
+Set-Location $BackendDir
+
+if (-not (Test-Path ".venv")) {
+    Write-Host "  Creating virtual environment in .venv..." -ForegroundColor Gray
+    python -m venv .venv
+} else {
+    Write-Host "  Virtual environment (.venv) already exists." -ForegroundColor Gray
+}
+
+$VenvPython = Join-Path $BackendDir ".venv\Scripts\python.exe"
+$VenvPip = Join-Path $BackendDir ".venv\Scripts\pip.exe"
+
+# Step 3: Install Backend Requirements
+Write-Host "`n[3/6] Installing Backend Dependencies (pip install -r requirements.txt)..." -ForegroundColor Yellow
+& $VenvPython -m pip install --upgrade pip --quiet
+& $VenvPip install -r requirements.txt --quiet
+Write-Host "  [OK] Backend Python packages installed successfully!" -ForegroundColor Green
+
+# Step 4: Setup Backend .env file
+Write-Host "`n[4/6] Verifying Backend Environment Configuration (.env)..." -ForegroundColor Yellow
+if (-not (Test-Path ".env")) {
+    if (Test-Path ".env.example") {
+        Copy-Item ".env.example" ".env"
+        Write-Host "  Created backend/.env from .env.example. Please review database credentials!" -ForegroundColor Magenta
+    }
+} else {
+    Write-Host "  [OK] backend/.env file found." -ForegroundColor Green
+}
+
+# Step 5: Install Frontend Dependencies
+Write-Host "`n[5/6] Installing Frontend Dependencies (npm install in frontend)..." -ForegroundColor Yellow
+Set-Location $FrontendDir
+npm install --silent
+Write-Host "  [OK] Frontend npm packages installed successfully!" -ForegroundColor Green
+
+# Step 6: Database Setup & Migrations
+Write-Host "`n[6/6] Applying PostgreSQL Database Migrations..." -ForegroundColor Yellow
+Set-Location $BackendDir
+
+try {
+    & $VenvPython manage.py migrate
+    Write-Host "  [OK] Database migrations applied successfully!" -ForegroundColor Green
+} catch {
+    Write-Host "  [!] Migration warning: Ensure PostgreSQL service is active and database exists." -ForegroundColor Yellow
+}
+
+# Return to root directory
+Set-Location $ProjectRoot
+
+Write-Host "`n==========================================================" -ForegroundColor Cyan
+Write-Host "  ALL REQUIREMENTS INSTALLED & SETUP COMPLETED!           " -ForegroundColor Green
+Write-Host "==========================================================" -ForegroundColor Cyan
+Write-Host "To launch all services at once, run: .\start-all.bat" -ForegroundColor White
+Write-Host "  - Django Backend:  http://127.0.0.1:8000" -ForegroundColor Gray
+Write-Host "  - Next.js Portal:  http://localhost:3001" -ForegroundColor Gray
+Write-Host "==========================================================" -ForegroundColor Cyan
+----------------------------- POWERSHELL SCRIPT END -----------------------------
